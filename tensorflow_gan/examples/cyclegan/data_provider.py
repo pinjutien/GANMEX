@@ -119,7 +119,8 @@ def provide_custom_datasets(batch_size,
                             image_file_patterns=None,
                             shuffle=True,
                             num_threads=1,
-                            patch_size=128):
+                            patch_size=128,
+                            tfdata_source='cycle_gan'):
   """Provides multiple batches of custom image data.
 
   Args:
@@ -147,9 +148,12 @@ def provide_custom_datasets(batch_size,
     for pattern in image_file_patterns:
       images_ds.append(
           _provide_custom_dataset(image_file_pattern=pattern,
-                                  num_threads=num_threads))
+                                  num_threads=num_threads,
+          ))
   else:
-    ds_dict = tfds.load('cycle_gan', shuffle_files=shuffle)
+    print("[**] use tf data source: {tfdata_source}".format(tfdata_source=tfdata_source))
+    # ds_dict = tfds.load('cycle_gan', shuffle_files=shuffle)
+    ds_dict = tfds.load(tfdata_source, shuffle_files=shuffle)
     def _img(x):
       return x['image']
     images_ds = [ds_dict['trainA'].map(_img, num_parallel_calls=num_threads),
@@ -162,7 +166,8 @@ def provide_custom_data(batch_size,
                         image_file_patterns=None,
                         shuffle=True,
                         num_threads=1,
-                        patch_size=128):
+                        patch_size=128,
+                        tfdata_source='cycle_gan'):
   """Provides multiple batches of custom image data.
 
   Args:
@@ -183,8 +188,12 @@ def provide_custom_data(batch_size,
   Raises:
     ValueError: If image_file_patterns is not a list or tuple.
   """
-  datasets = provide_custom_datasets(batch_size, image_file_patterns, shuffle,
-                                     num_threads, patch_size)
+  datasets = provide_custom_datasets(batch_size,
+                                     image_file_patterns,
+                                     shuffle,
+                                     num_threads,
+                                     patch_size,
+                                     tfdata_source)
 
   tensors = []
   for ds in datasets:

@@ -20,7 +20,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
-
+import json
 import tensorflow as tf
 import tensorflow_gan as tfgan
 
@@ -28,23 +28,27 @@ from tensorflow_gan.examples.cyclegan import data_provider
 from tensorflow_gan.examples.cyclegan import networks
 
 HParams = collections.namedtuple('HParams', [
-    'image_set_x_file_pattern',
-    'image_set_y_file_pattern',
-    'batch_size',
-    'patch_size',
-    'master',
-    'train_log_dir',
-    'generator_lr',
-    'discriminator_lr',
-    'max_number_of_steps',
-    'ps_replicas',
-    'task',
-    'cycle_consistency_loss_weight',
+  'image_set_x_file_pattern',
+  'image_set_y_file_pattern',
+  'batch_size',
+  'patch_size',
+  'master',
+  'train_log_dir',
+  'generator_lr',
+  'discriminator_lr',
+  'max_number_of_steps',
+  'ps_replicas',
+  'task',
+  'cycle_consistency_loss_weight',
+  'tfdata_source'
 ])
 
 
-def _get_data(image_set_x_file_pattern, image_set_y_file_pattern, batch_size,
-              patch_size):
+def _get_data(image_set_x_file_pattern,
+              image_set_y_file_pattern,
+              batch_size,
+              patch_size,
+              tfdata_source):
   """Returns image TEnsors from a custom provider or TFDS."""
   if image_set_x_file_pattern and image_set_y_file_pattern:
     image_file_patterns = [image_set_x_file_pattern, image_set_y_file_pattern]
@@ -53,9 +57,10 @@ def _get_data(image_set_x_file_pattern, image_set_y_file_pattern, batch_size,
       raise ValueError('Both image patterns or neither must be provided.')
     image_file_patterns = None
   images_x, images_y = data_provider.provide_custom_data(
-      batch_size=batch_size,
-      image_file_patterns=image_file_patterns,
-      patch_size=patch_size)
+    batch_size=batch_size,
+    image_file_patterns=image_file_patterns,
+    patch_size=patch_size,
+    tfdata_source=tfdata_source)
 
   return images_x, images_y
 
@@ -169,12 +174,16 @@ def train(hparams):
   """
   if not tf.io.gfile.exists(hparams.train_log_dir):
     tf.io.gfile.makedirs(hparams.train_log_dir)
+    
+  with open(hparams.train_log_dir + 'train_result.json', 'w') as fp:
+    json.dump(hparams._asdict(), fp, indent=4)
 
   with tf.device(tf.compat.v1.train.replica_device_setter(hparams.ps_replicas)):
     with tf.compat.v1.name_scope('inputs'), tf.device('/cpu:0'):
+      import pdb; pdb.set_trace()
       images_x, images_y = _get_data(hparams.image_set_x_file_pattern,
                                      hparams.image_set_y_file_pattern,
-                                     hparams.batch_size, hparams.patch_size)
+                                     hparams.batch_size, hparams.patch_size, hparams.tfdata_source)
 
     # Define CycleGAN model.
     cyclegan_model = _define_model(images_x, images_y)

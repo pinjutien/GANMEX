@@ -18,7 +18,6 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 from absl import app
 from absl import flags
 
@@ -33,6 +32,9 @@ flags.DEFINE_integer('patch_size', 64, 'The patch size of images.')
 flags.DEFINE_string('master', '', 'Name of the TensorFlow master to use.')
 flags.DEFINE_string('train_log_dir', '/tmp/tfgan_logdir/cyclegan/',
                     'Directory where to write event logs.')
+flags.DEFINE_string('tfdata_source', 'cycle_gan',
+                    'load tf dataset. default=apple2orange')
+
 flags.DEFINE_float('generator_lr', 0.0002,
                    'The compression model learning rate.')
 flags.DEFINE_float('discriminator_lr', 0.0001,
@@ -55,10 +57,11 @@ FLAGS = flags.FLAGS
 
 def main(_):
   hparams = train_lib.HParams(
-      FLAGS.image_set_x_file_pattern, FLAGS.image_set_y_file_pattern,
-      FLAGS.batch_size, FLAGS.patch_size, FLAGS.master, FLAGS.train_log_dir,
-      FLAGS.generator_lr, FLAGS.discriminator_lr, FLAGS.max_number_of_steps,
-      FLAGS.ps_replicas, FLAGS.task, FLAGS.cycle_consistency_loss_weight)
+    FLAGS.image_set_x_file_pattern, FLAGS.image_set_y_file_pattern,
+    FLAGS.batch_size, FLAGS.patch_size, FLAGS.master, FLAGS.train_log_dir,
+    FLAGS.generator_lr, FLAGS.discriminator_lr, FLAGS.max_number_of_steps,
+    FLAGS.ps_replicas, FLAGS.task, FLAGS.cycle_consistency_loss_weight,
+    FLAGS.tfdata_source)
   train_lib.train(hparams)
 
 
