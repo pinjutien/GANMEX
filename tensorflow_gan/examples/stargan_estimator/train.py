@@ -31,6 +31,10 @@ flags.DEFINE_integer('patch_size', 128, 'The patch size of images.')
 # Write-to-disk flags.
 flags.DEFINE_string('output_dir', '/tmp/tfgan_logdir/stargan_estimator/out/',
                     'Directory where to write summary image.')
+flags.DEFINE_string('tfdata_source', 'celeb_a',
+                    'load tf dataset. default=celeb_a')
+flags.DEFINE_string('tfdata_source_domains', 'Black_Hair,Blond_Hair,Brown_Hair',
+                    'celeb_a domain: default=Black_Hair,Blond_Hair,Brown_Hair')
 
 # FLAGS for training hyper-parameters.
 flags.DEFINE_float('generator_lr', 1e-4, 'The generator learning rate.')
@@ -64,7 +68,8 @@ def main(_):
                               FLAGS.discriminator_lr, FLAGS.max_number_of_steps,
                               FLAGS.steps_per_eval, FLAGS.adam_beta1,
                               FLAGS.adam_beta2, FLAGS.gen_disc_step_ratio,
-                              FLAGS.master, FLAGS.ps_tasks, FLAGS.task)
+                              FLAGS.master, FLAGS.ps_tasks, FLAGS.task,
+                              FLAGS.tfdata_source, FLAGS.tfdata_source_domains)
   train_lib.train(hparams)
 
 

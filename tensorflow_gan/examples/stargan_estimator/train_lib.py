@@ -21,7 +21,7 @@ from __future__ import print_function
 
 import collections
 import os
-
+import json
 import numpy as np
 import PIL
 from six.moves import xrange  # pylint: disable=redefined-builtin
@@ -34,7 +34,7 @@ from tensorflow_gan.examples.stargan_estimator import data_provider
 HParams = collections.namedtuple('HParams', [
     'batch_size', 'patch_size', 'output_dir', 'generator_lr',
     'discriminator_lr', 'max_number_of_steps', 'steps_per_eval', 'adam_beta1',
-    'adam_beta2', 'gen_disc_step_ratio', 'master', 'ps_tasks', 'task'
+    'adam_beta2', 'gen_disc_step_ratio', 'master', 'ps_tasks', 'task', 'tfdata_source', 'tfdata_source_domains'
 ])
 
 
@@ -123,6 +123,9 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
   if not tf.io.gfile.exists(hparams.output_dir):
     tf.io.gfile.makedirs(hparams.output_dir)
 
+  with open(hparams.output_dir + 'train_result.json', 'w') as fp:
+    json.dump(hparams._asdict(), fp, indent=4)
+    
   # Make sure steps integers are consistent.
   if hparams.max_number_of_steps % hparams.steps_per_eval != 0:
     raise ValueError('`max_number_of_steps` must be divisible by '
@@ -135,6 +138,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
 
   # Create estimator.
   stargan_estimator = tfgan.estimator.StarGANEstimator(
+      model_dir= hparams.output_dir + "checkpoints/",
       generator_fn=override_generator_fn or network.generator,
       discriminator_fn=override_discriminator_fn or network.discriminator,
       loss_fn=tfgan.stargan_loss,
@@ -145,9 +149,16 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
       add_summaries=tfgan.estimator.SummaryType.IMAGES)
 
   # Get input function for training and test images.
-  train_input_fn = lambda: data_provider.provide_data(  # pylint:disable=g-long-lambda
-      'train', hparams.batch_size, hparams.patch_size)
-  test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size)
+  if (hparams.tfdata_source):
+    print("[**] load tensorflow dataset: {x}".format(x=hparams.tfdata_source))
+    train_input_fn = lambda: data_provider.provide_data(  # pylint:disable=g-long-lambda
+        'train', hparams.batch_size, hparams.patch_size, hparams.tfdata_source, hparams.tfdata_source_domains)
+    test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size)
+  else:
+    train_input_fn = None
+    test_images_np = None
+    raise Exception("TODO: support external data souce.")
+    
   filename_str = os.path.join(hparams.output_dir, 'summary_image_%i.png')
 
   # Periodically train and write prediction output to disk.
