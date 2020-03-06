@@ -180,7 +180,6 @@ def train(hparams):
 
   with tf.device(tf.compat.v1.train.replica_device_setter(hparams.ps_replicas)):
     with tf.compat.v1.name_scope('inputs'), tf.device('/cpu:0'):
-      import pdb; pdb.set_trace()
       images_x, images_y = _get_data(hparams.image_set_x_file_pattern,
                                      hparams.image_set_y_file_pattern,
                                      hparams.batch_size, hparams.patch_size, hparams.tfdata_source)

@@ -24,8 +24,12 @@ import tensorflow_datasets as tfds
 from tensorflow_gan.examples.cyclegan import data_provider
 
 
-def provide_dataset(split, batch_size, patch_size, num_parallel_calls=None,
+def provide_dataset(split,
+                    batch_size,
+                    patch_size,
+                    num_parallel_calls=None,
                     shuffle=True,
+                    tfdata_source='celeb_a',
                     domains=('Black_Hair', 'Blond_Hair', 'Brown_Hair')):
   """Provides batches of CelebA image patches.
 
@@ -48,7 +52,9 @@ def provide_dataset(split, batch_size, patch_size, num_parallel_calls=None,
   Raises:
     ValueError: If `split` isn't `train` or `test`.
   """
-  ds = tfds.load('celeb_a', split=split, shuffle_files=shuffle)
+  # ds = tfds.load('celeb_a', split=split, shuffle_files=shuffle)
+  print("[**] Load tf data source: {tfdata_source}".format(tfdata_source=tfdata_source))
+  ds = tfds.load(tfdata_source, split=split, shuffle_files=shuffle)
 
   def _filter_pred(attribute):
     def _filter(element):
@@ -81,8 +87,12 @@ def provide_dataset(split, batch_size, patch_size, num_parallel_calls=None,
   return ds
 
 
-def provide_data(split, batch_size, patch_size, num_parallel_calls=None,
+def provide_data(split,
+                 batch_size,
+                 patch_size,
+                 num_parallel_calls=None,
                  shuffle=True,
+                 tfdata_source="celeb_a",
                  domains=('Black_Hair', 'Blond_Hair', 'Brown_Hair')):
   """Provides batches of CelebA image patches.
 
@@ -106,7 +116,7 @@ def provide_data(split, batch_size, patch_size, num_parallel_calls=None,
     ValueError: If `split` isn't `train` or `test`.
   """
   ds = provide_dataset(split, batch_size, patch_size, num_parallel_calls,
-                       shuffle, domains)
+                       shuffle, tfdata_source, domains)
 
   next_batch = tf.compat.v1.data.make_one_shot_iterator(ds).get_next()
   domains = next_batch.keys()
