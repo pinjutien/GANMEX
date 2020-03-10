@@ -150,9 +150,15 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
 
   # Get input function for training and test images.
   if (hparams.tfdata_source):
-    print("[**] load tensorflow dataset: {x}".format(x=hparams.tfdata_source))
+    print("[**] load train dataset: tensorflow dataset: {x}".format(x=hparams.tfdata_source))
     train_input_fn = lambda: data_provider.provide_data(  # pylint:disable=g-long-lambda
-        'train', hparams.batch_size, hparams.patch_size, hparams.tfdata_source, hparams.tfdata_source_domains)
+      split='train',
+      batch_size=hparams.batch_size,
+      patch_size=hparams.patch_size,
+      num_parallel_calls=None,
+      shuffle=True,
+      tfdata_source=hparams.tfdata_source,
+      domains=tuple(hparams.tfdata_source_domains.split(",")))
     test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size)
   else:
     train_input_fn = None
@@ -165,6 +171,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
   cur_step = 0
   while cur_step < hparams.max_number_of_steps:
     cur_step += hparams.steps_per_eval
+    print("current step: {cur_step} /{max_step}".format(cur_step=cur_step, max_step=hparams.max_number_of_steps))    
     stargan_estimator.train(train_input_fn, steps=cur_step)
     summary_img = _get_summary_image(stargan_estimator, test_images_np)
     with tf.io.gfile.GFile(filename_str % cur_step, 'w') as f:
