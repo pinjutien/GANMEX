@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow_gan.examples.cyclegan import data_provider as cyclegan_dp
+import numpy as np
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 def load_data(input_file_pattern):
@@ -29,7 +30,7 @@ def decode_img(img):
     # return tf.image.resize(img, [IMG_WIDTH, IMG_HEIGHT])
     return img
 
-def process_path(file_path):
+def process_path(file_path, patch_size):
     label = get_label(file_path)
     # load the raw data from the file as a string
     img = tf.io.read_file(file_path)
@@ -65,7 +66,7 @@ def load_custom_data(input_file_pattern, patch_size, domains=['Black_Hair','Blon
     images_name = []
     labels = []
     for file_path in tf.io.gfile.glob(input_file_pattern):
-        image_x, labels_dict = process_path(file_path)
+        image_x, labels_dict = process_path(file_path, patch_size)
         # cur_lbl = [labels_dict['Black_Hair'.lower()],
         #            labels_dict['Blond_Hair'.lower()],
         #            labels_dict['Brown_Hair'.lower()]]
@@ -76,7 +77,7 @@ def load_custom_data(input_file_pattern, patch_size, domains=['Black_Hair','Blon
         images += [tfds.as_numpy(image_x)]
         images_name += [file_path]
         labels += [cur_lbl]
-    return images, images_name, labels
+    return np.array(images), np.array(images_name), np.array(labels)
 
 
 if __name__ == '__main__':
