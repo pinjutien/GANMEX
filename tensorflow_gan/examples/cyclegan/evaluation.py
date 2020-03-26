@@ -26,6 +26,7 @@ import PIL
 import tensorflow as tf
 from tensorflow_gan.examples.cyclegan import data_provider
 from tensorflow_gan.examples.cyclegan import networks
+import json
 
 def _make_dir_if_not_exists(dir_path):
     """Make a directory if it does not exist."""
@@ -89,23 +90,27 @@ def export(sess, input_pl, output_tensor, input_file_pattern, output_dir):
 def check_input_info(input_json):
     if (not 'checkpoint_path' in input_json): raise Exception("Please provide model checkpoint.")
     
+    if ("x2y_images_dir" in input_json):
+        input_json.x2y_images_dir = input_json.output_dir + input_json.x2y_images_dir
+        
+    if ("y2x_images_dir" in input_json):
+        input_json.y2x_images_dir = input_json.output_dir + input_json.y2x_images_dir
+    
     if ("x_images" in input_json and not "x2y_images_dir" in input_json):
         raise Exception("Please provide output dir for y: x-->y.")
 
     if ("y_images" in input_json and not "y2x_images_dir" in input_json):
         raise Exception("Please provide output dir for x: y-->x.")
       
-    # flags.register_validator(
-    #     'generated_x_dir',
-    #     lambda x: False if (FLAGS.image_set_y_glob and not x) else True,
-    #     'Must provide `generated_x_dir`.')
-    # flags.register_validator(
-    #     'generated_y_dir',
-    #     lambda x: False if (FLAGS.image_set_x_glob and not x) else True,
-    #     'Must provide `generated_y_dir`.')
-
-
 def main(inputs):
+    
+    if not tf.io.gfile.exists(inputs.output_dir):
+        tf.io.gfile.makedirs(inputs.output_dir)
+        
+    with open(inputs.output_dir + 'evaluation.json', 'w') as fp:
+        json.dump(inputs.__dict__, fp, indent=4)
+        
+    print("evluation result: {x}".format(x=inputs.output_dir))
     check_input_info(inputs)
     images_x_hwc_pl, generated_y = make_inference_graph('ModelX2Y', inputs.patch_size)
     images_y_hwc_pl, generated_x = make_inference_graph('ModelY2X', inputs.patch_size)
@@ -126,13 +131,17 @@ def main(inputs):
 if __name__ == '__main__':
     # python inference_demo.py --checkpoint_path=./model_ckpts/cyclegan/model.ckpt-464267 --image_set_x_glob=./testdata/*.jpg --generated_y_dir=./testdata/tmp/generated_y/ --patch_dim=64
     input_json = {
-      "checkpoint_path": "./model_ckpts/cyclegan/model.ckpt-464267",
-      "train_data_sourec": "apple2orange",
-      "x_images": "./testdata/*.jpg",
-      "x2y_images_dir": "./testdata/tmp2/generated_y/",  # x2y: transform x to y.
-      # "y_images": "./testdata/*.jpg",
-      # "y2x_images_dir": "./testdata/tmp/generated_x/",  # y2x: transform y to x.
-      "patch_size": 64,
+        # "checkpoint_path": "./model_ckpts/cyclegan/model.ckpt-464267",
+        "checkpoint_path": "/Users/ptien/tfds-download/models_ckpts/tfgan_logdir/cyclegan/model.ckpt-500000",
+        "train_data_sourec": "apple2orange",
+        # "x_images": "./testdata/*.jpg",
+        "x_images": "/Users/ptien/tfds-download/apple2orange/testA/*.jpg", # "n07740461_10011.jpg",
+        # "x2y_images_dir": "./testdata/tmp2/generated_y/",  # x2y: transform x to y.
+        "output_dir": "/Users/ptien/tfds-download/apple2orange/experiment/",
+        "x2y_images_dir": "generated_y/", # sub folder under output_dir
+        # "y_images": "./testdata/*.jpg",
+        # "y2x_images_dir": "./testdata/tmp/generated_x/",  # y2x: transform y to x.
+        "patch_size": 64,
     }
     if (type(input_json) !=Namespace):
         input_json = Namespace(**input_json)
