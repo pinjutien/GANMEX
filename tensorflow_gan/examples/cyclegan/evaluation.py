@@ -137,11 +137,11 @@ if __name__ == '__main__':
         # "x_images": "./testdata/*.jpg",
         "x_images": "/Users/ptien/tfds-download/apple2orange/testA/*.jpg", # "n07740461_10011.jpg",
         # "x2y_images_dir": "./testdata/tmp2/generated_y/",  # x2y: transform x to y.
-        "output_dir": "/Users/ptien/tfds-download/apple2orange/experiment/",
+        "output_dir": "/Users/ptien/tfds-download/apple2orange/experiment2-500000/",
         "x2y_images_dir": "generated_y/", # sub folder under output_dir
         # "y_images": "./testdata/*.jpg",
         # "y2x_images_dir": "./testdata/tmp/generated_x/",  # y2x: transform y to x.
-        "patch_size": 64,
+        "patch_size": 256,
     }
     if (type(input_json) !=Namespace):
         input_json = Namespace(**input_json)
