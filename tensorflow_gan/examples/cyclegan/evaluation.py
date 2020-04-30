@@ -131,13 +131,16 @@ def main(inputs):
 if __name__ == '__main__':
     # python inference_demo.py --checkpoint_path=./model_ckpts/cyclegan/model.ckpt-464267 --image_set_x_glob=./testdata/*.jpg --generated_y_dir=./testdata/tmp/generated_y/ --patch_dim=64
     input_json = {
-        # "checkpoint_path": "./model_ckpts/cyclegan/model.ckpt-464267",
-        "checkpoint_path": "/Users/ptien/tfds-download/models_ckpts/tfgan_logdir/cyclegan/model.ckpt-500000",
+        # "checkpoint_path": "/Users/ptien/tfds-download/models_ckpts/tfgan_logdir/cyclegan/model.ckpt-489180",
+        # "checkpoint_path":"/Users/ptien/tfds-download/models_ckpts/tfgan_logdir/h2z/cyclegan/model.ckpt-500000", 
+        # "train_data_sourec": "cycle_gan/horse2zebra",
+        "checkpoint_path": "/Users/ptien/tfds-download/models_ckpts/tfgan_logdir/cyclegan_a2o_1000/cyclegan_a2o_1000/model.ckpt-1000",
         "train_data_sourec": "apple2orange",
         # "x_images": "./testdata/*.jpg",
-        "x_images": "/Users/ptien/tfds-download/apple2orange/testA/*.jpg", # "n07740461_10011.jpg",
+        # "x_images": "/Users/ptien/tfds-download/apple2orange/testA/*.jpg", # "n07740461_10011.jpg",
+        "x_images": "/Users/ptien/tfds-download/apple2orange/testA/*.jpg",
         # "x2y_images_dir": "./testdata/tmp2/generated_y/",  # x2y: transform x to y.
-        "output_dir": "/Users/ptien/tfds-download/apple2orange/experiment2-500000/",
+        "output_dir": "/Users/ptien/tfds-download/apple2orange/experiment-1000/",
         "x2y_images_dir": "generated_y/", # sub folder under output_dir
         # "y_images": "./testdata/*.jpg",
         # "y2x_images_dir": "./testdata/tmp/generated_x/",  # y2x: transform y to x.
