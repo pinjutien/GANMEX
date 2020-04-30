@@ -2,6 +2,11 @@
 
 Note: it is based on stargan estimator doc and refactor part of code. Add evaluation.py to load checkpoint and transform data.
 
+### env version:
+tensorflow = "1.15.0"
+tensorflow_datasets = "2.1.0"
+tensorflow_probability = "0.8.0"
+
 ### How to run
 
 0. Please do NOT
