@@ -10,6 +10,12 @@ fully-working examples. Each subdirectory contains a different working example.
 The sub-sections below describe each of the problems, and include some sample
 outputs. **Be sure to follow the instructions for how to run the examples.**
 
+
+## Environment:
+* tensorflow=='1.15.0'
+* tensorflow_probability=='0.8.0'
+* tensorflow_datasets=='2.1.0'
+
 ## Steps to run an example
 
 1.  Add the examples directory to your PYTHONPATH environment variable with
