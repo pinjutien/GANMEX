@@ -117,7 +117,7 @@ def main(inputs):
 
     # Restore all the variables that were saved in the checkpoint.
     saver = tf.compat.v1.train.Saver()
-    generated_image_x, generated_image_y = None, None
+    generated_images_x, generated_images_y = None, None
     with tf.compat.v1.Session() as sess:
         saver.restore(sess, inputs.checkpoint_path)
         if ("x_images" in inputs):
@@ -126,7 +126,7 @@ def main(inputs):
         if ("y_images" in inputs):
             print("Convert y to x ...")          
             generated_images_x = export(sess, images_y_hwc_pl, generated_x, inputs.y_images,inputs.y2x_images_dir)
-    return generated_image_x, generated_image_y
+    return generated_images_x, generated_images_y
   
 if __name__ == '__main__':
     # python inference_demo.py --checkpoint_path=./model_ckpts/cyclegan/model.ckpt-464267 --image_set_x_glob=./testdata/*.jpg --generated_y_dir=./testdata/tmp/generated_y/ --patch_dim=64
@@ -149,4 +149,4 @@ if __name__ == '__main__':
     if (type(input_json) !=Namespace):
         input_json = Namespace(**input_json)
 
-    generated_image_x, generated_image_y = main(input_json)
+    generated_images_x, generated_images_y = main(input_json)
