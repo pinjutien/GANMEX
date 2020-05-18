@@ -28,7 +28,7 @@ flags.DEFINE_string('image_set_x_file_pattern', None,
 flags.DEFINE_string('image_set_y_file_pattern', None,
                     'File pattern of images in image set Y')
 flags.DEFINE_integer('batch_size', 1, 'The number of images in each batch.')
-flags.DEFINE_integer('patch_size', 64, 'The patch size of images.')
+flags.DEFINE_integer('patch_size', 256, 'The patch size of images.')  # was 64
 flags.DEFINE_string('master', '', 'Name of the TensorFlow master to use.')
 flags.DEFINE_string('train_log_dir', '/tmp/tfgan_logdir/cyclegan/',
                     'Directory where to write event logs.')
@@ -39,8 +39,8 @@ flags.DEFINE_float('generator_lr', 0.0002,
                    'The compression model learning rate.')
 flags.DEFINE_float('discriminator_lr', 0.0001,
                    'The discriminator learning rate.')
-flags.DEFINE_integer('max_number_of_steps', 500000,
-                     'The maximum number of gradient steps.')
+flags.DEFINE_integer('max_number_of_steps', 5000000,
+                     'The maximum number of gradient steps.')  # was 500000
 flags.DEFINE_integer(
     'ps_replicas', 0,
     'The number of parameter servers. If the value is 0, then the parameters '
@@ -49,8 +49,10 @@ flags.DEFINE_integer(
     'task', 0,
     'The Task ID. This value is used when training with multiple workers to '
     'identify each worker.')
-flags.DEFINE_float('cycle_consistency_loss_weight', 10.0,
-                   'The weight of cycle consistency loss')
+flags.DEFINE_float('cycle_consistency_loss_weight', 50.0,
+                   'The weight of cycle consistency loss')  # was 10.0
+flags.DEFINE_integer('save_checkpoint_steps', 20000,
+                   'Save a checkpoint every N steps. Put 0 to skip this option')
 
 FLAGS = flags.FLAGS
 

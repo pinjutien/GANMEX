@@ -205,6 +205,16 @@ def train(hparams):
                                      name='status_message')
     if not hparams.max_number_of_steps:
       return
+
+    additional_params = {}
+    if hparams.save_checkpoint_steps:
+        max_to_keep = hparams.max_number_of_steps // hparams.save_checkpoint_steps + 1
+        additional_params = {
+            'scaffold': tf.train.Scaffold(saver=tf.train.Saver(max_to_keep=max_to_keep)),
+            'save_checkpoint_secs': None,
+            'save_checkpoint_steps': hparams.save_checkpoint_steps,
+        }
+
     tfgan.gan_train(
         train_ops,
         hparams.train_log_dir,
@@ -215,4 +225,6 @@ def train(hparams):
                                            every_n_iter=10)
         ],
         master=hparams.master,
-        is_chief=hparams.task == 0)
+        is_chief=hparams.task == 0,
+        **additional_params,
+    )
