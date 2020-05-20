@@ -22,6 +22,7 @@ from __future__ import print_function
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow_gan.examples.cyclegan import data_provider
+from tensorflow_gan.examples.cyclegan.data_provider import provide_custom_datasets
 
 
 def provide_dataset(split,
@@ -94,9 +95,9 @@ def provide_data(split,
                  shuffle=True,
                  tfdata_source="celeb_a",
                  domains=('Black_Hair', 'Blond_Hair', 'Brown_Hair')):
-  """Provides batches of CelebA image patches.
+    """Provides batches of CelebA image patches.
 
-  Args:
+    Args:
     split: Either 'train' or 'test'.
     batch_size: The number of images in each batch.
     patch_size: Python int. The patch size to extract.
@@ -104,7 +105,7 @@ def provide_data(split,
     shuffle: Whether to shuffle.
     domains: Name of domains to transform between. Must be in Celeb A dataset.
 
-  Returns:
+    Returns:
     A tf.data.Dataset with:
       * images:  `Tensor` of size [batch_size, patch_size, patch_size, 3] and
           type tf.float32. Output pixel values are in [-1, 1].
@@ -112,15 +113,31 @@ def provide_data(split,
           encodings with type tf.int32, or a `Tensor` of size [batch_size],
           depending on the value of `one_hot`.
 
-  Raises:
+    Raises:
     ValueError: If `split` isn't `train` or `test`.
-  """
-  ds = provide_dataset(split, batch_size, patch_size, num_parallel_calls,
-                       shuffle, tfdata_source, domains)
+    """
 
-  next_batch = tf.compat.v1.data.make_one_shot_iterator(ds).get_next()
-  domains = next_batch.keys()
-  images = [next_batch[domain]['images'] for domain in domains]
-  labels = [next_batch[domain]['labels'] for domain in domains]
+    if tfdata_source.startswith('cycle_gan'):
+        ds = provide_custom_datasets(batch_size,
+                                     None,
+                                     shuffle,
+                                     1,
+                                     patch_size,
+                                     tfdata_source,
+                                     with_labels=True)
 
-  return images, labels
+        images = [d['images'] for d in ds]
+        labels = [d['labels'] for d in ds]
+
+    else:
+        ds = provide_dataset(split, batch_size, patch_size, num_parallel_calls,
+                             shuffle, tfdata_source, domains)
+
+
+
+        next_batch = tf.compat.v1.data.make_one_shot_iterator(ds).get_next()
+        domains = next_batch.keys()
+        images = [next_batch[domain]['images'] for domain in domains]
+        labels = [next_batch[domain]['labels'] for domain in domains]
+
+    return images, labels

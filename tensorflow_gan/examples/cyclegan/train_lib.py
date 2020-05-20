@@ -40,7 +40,8 @@ HParams = collections.namedtuple('HParams', [
   'ps_replicas',
   'task',
   'cycle_consistency_loss_weight',
-  'tfdata_source'
+  'tfdata_source',
+  'save_checkpoint_steps'
 ])
 
 

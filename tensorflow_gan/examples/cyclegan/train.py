@@ -63,7 +63,7 @@ def main(_):
     FLAGS.batch_size, FLAGS.patch_size, FLAGS.master, FLAGS.train_log_dir,
     FLAGS.generator_lr, FLAGS.discriminator_lr, FLAGS.max_number_of_steps,
     FLAGS.ps_replicas, FLAGS.task, FLAGS.cycle_consistency_loss_weight,
-    FLAGS.tfdata_source)
+    FLAGS.tfdata_source, FLAGS.save_checkpoint_steps)
   train_lib.train(hparams)
 
 

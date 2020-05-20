@@ -87,40 +87,61 @@ def _provide_custom_dataset(image_file_pattern, num_threads=1):
 
 
 def _preprocess_datasets(dataset, batch_size, shuffle=True, num_threads=1,
-                         patch_size=128):
-  """Run prepreocessing on a list of datasets.
+                         patch_size=128, label_spec=None):
+    """Run prepreocessing on a list of datasets.
 
-  Args:
+    Args:
     dataset: A dataset with a single element.
     batch_size: The number of images in each batch.
     shuffle: Whether to shuffle the read images.  Defaults to True.
     num_threads: Number of mapping threads.  Defaults to 1.
     patch_size: Size of the path to extract from the image.  Defaults to 128.
+    label_spec: Should be (index, number of labels)
 
-  Returns:
+    Returns:
     A list of processed datasets. Each dataset has a single entry with shape
     [batch_size, batch_size, batch_size, channels].s
-  """
-  patches_ds = dataset.map(
-      lambda img: full_image_to_patch(img, patch_size),
-      num_parallel_calls=num_threads)
-  patches_ds = patches_ds.repeat()
+    """
+    patches_ds = dataset.map(
+        lambda img: full_image_to_patch(img, patch_size),
+        num_parallel_calls=num_threads)
+    patches_ds = patches_ds.repeat()
 
-  if shuffle:
-    patches_ds = patches_ds.shuffle(5 * batch_size)
+    if label_spec:
+        def get_labels(_):
+            return tf.one_hot(*label_spec)
 
-  patches_ds = patches_ds.prefetch(5 * batch_size)
-  patches_ds = patches_ds.batch(batch_size)
+        patches_labels = patches_ds.map(get_labels)
+        patches_labels = patches_labels.prefetch(5 * batch_size)
+        patches_labels = patches_labels.batch(batch_size, drop_remainder=True)
+        iterator_labels = tf.compat.v1.data.make_initializable_iterator(patches_labels)
+        tf.compat.v1.add_to_collection(tf.compat.v1.GraphKeys.TABLE_INITIALIZERS,
+                                       iterator_labels.initializer)
 
-  return patches_ds
+        patches_ds = patches_ds.prefetch(5 * batch_size)
+        patches_ds = patches_ds.batch(batch_size, drop_remainder=True)
+        iterator_ds = tf.compat.v1.data.make_initializable_iterator(patches_ds)
+        tf.compat.v1.add_to_collection(tf.compat.v1.GraphKeys.TABLE_INITIALIZERS,
+                                       iterator_ds.initializer)
 
+        return {'images': iterator_ds.get_next(), 'labels': iterator_labels.get_next()}
+
+    else:
+        if shuffle:
+            patches_ds = patches_ds.shuffle(5 * batch_size)
+
+            patches_ds = patches_ds.prefetch(5 * batch_size)
+            patches_ds = patches_ds.batch(batch_size)
+
+        return patches_ds
 
 def provide_custom_datasets(batch_size,
                             image_file_patterns=None,
                             shuffle=True,
                             num_threads=1,
                             patch_size=128,
-                            tfdata_source='cycle_gan'):
+                            tfdata_source='cycle_gan',
+                            with_labels=False):
   """Provides multiple batches of custom image data.
 
   Args:
@@ -158,8 +179,13 @@ def provide_custom_datasets(batch_size,
       return x['image']
     images_ds = [ds_dict['trainA'].map(_img, num_parallel_calls=num_threads),
                  ds_dict['trainB'].map(_img, num_parallel_calls=num_threads)]
-  return [_preprocess_datasets(x, batch_size, shuffle, num_threads, patch_size)
-          for x in images_ds]
+
+  if with_labels:
+      return [_preprocess_datasets(x, batch_size, shuffle, num_threads, patch_size, (ind, len(images_ds)))
+              for ind, x in enumerate(images_ds)]
+  else:
+      return [_preprocess_datasets(x, batch_size, shuffle, num_threads, patch_size)
+              for x in images_ds]
 
 
 def provide_custom_data(batch_size,

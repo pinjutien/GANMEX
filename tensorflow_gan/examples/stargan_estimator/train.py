@@ -31,7 +31,7 @@ flags.DEFINE_integer('patch_size', 128, 'The patch size of images.')
 # Write-to-disk flags.
 flags.DEFINE_string('output_dir', '/tmp/tfgan_logdir/stargan_estimator/out/',
                     'Directory where to write summary image.')
-flags.DEFINE_string('tfdata_source', 'celeb_a',
+flags.DEFINE_string('tfdata_source', 'cycle_gan',
                     'load tf dataset. default=celeb_a')
 flags.DEFINE_string('tfdata_source_domains', 'Black_Hair,Blond_Hair,Brown_Hair',
                     'celeb_a domain: default=Black_Hair,Blond_Hair,Brown_Hair')

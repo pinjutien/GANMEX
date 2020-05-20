@@ -159,10 +159,10 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
       shuffle=True,
       tfdata_source=hparams.tfdata_source,
       domains=tuple(hparams.tfdata_source_domains.split(",")))
-    test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size)
+    # test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size)
   else:
     train_input_fn = None
-    test_images_np = None
+    # test_images_np = None
     raise Exception("TODO: support external data souce.")
     
   filename_str = os.path.join(hparams.output_dir, 'summary_image_%i.png')
@@ -173,6 +173,6 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
     cur_step += hparams.steps_per_eval
     print("current step: {cur_step} /{max_step}".format(cur_step=cur_step, max_step=hparams.max_number_of_steps))    
     stargan_estimator.train(train_input_fn, steps=cur_step)
-    summary_img = _get_summary_image(stargan_estimator, test_images_np)
-    with tf.io.gfile.GFile(filename_str % cur_step, 'w') as f:
-      PIL.Image.fromarray((255 * summary_img).astype(np.uint8)).save(f, 'PNG')
+    # summary_img = _get_summary_image(stargan_estimator, test_images_np)
+    # with tf.io.gfile.GFile(filename_str % cur_step, 'w') as f:
+    #   PIL.Image.fromarray((255 * summary_img).astype(np.uint8)).save(f, 'PNG')
