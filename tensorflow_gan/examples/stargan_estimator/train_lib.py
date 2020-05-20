@@ -34,7 +34,8 @@ from tensorflow_gan.examples.stargan_estimator import data_provider
 HParams = collections.namedtuple('HParams', [
     'batch_size', 'patch_size', 'output_dir', 'generator_lr',
     'discriminator_lr', 'max_number_of_steps', 'steps_per_eval', 'adam_beta1',
-    'adam_beta2', 'gen_disc_step_ratio', 'master', 'ps_tasks', 'task', 'tfdata_source', 'tfdata_source_domains'
+    'adam_beta2', 'gen_disc_step_ratio', 'master', 'ps_tasks', 'task', 'tfdata_source', 'tfdata_source_domains',
+    'download', 'data_dir'
 ])
 
 
@@ -158,8 +159,12 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
       num_parallel_calls=None,
       shuffle=True,
       tfdata_source=hparams.tfdata_source,
-      domains=tuple(hparams.tfdata_source_domains.split(",")))
-    # test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size)
+      domains=tuple(hparams.tfdata_source_domains.split(",")),
+      download=eval(hparams.download),
+      data_dir=hparams.data_dir)
+    # test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size,
+    #                                                        download=eval(hparams.download),
+    #                                                        data_dir=hparams.data_dir)
   else:
     train_input_fn = None
     # test_images_np = None

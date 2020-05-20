@@ -31,7 +31,9 @@ def provide_dataset(split,
                     num_parallel_calls=None,
                     shuffle=True,
                     tfdata_source='celeb_a',
-                    domains=('Black_Hair', 'Blond_Hair', 'Brown_Hair')):
+                    domains=('Black_Hair', 'Blond_Hair', 'Brown_Hair'),
+                    download=True,
+                    data_dir=None):
   """Provides batches of CelebA image patches.
 
   Args:
@@ -55,7 +57,7 @@ def provide_dataset(split,
   """
   # ds = tfds.load('celeb_a', split=split, shuffle_files=shuffle)
   print("[**] Load tf data source: {tfdata_source}".format(tfdata_source=tfdata_source))
-  ds = tfds.load(tfdata_source, split=split, shuffle_files=shuffle)
+  ds = tfds.load(tfdata_source, split=split, shuffle_files=shuffle, download=download, data_dir=data_dir)
 
   def _filter_pred(attribute):
     def _filter(element):
@@ -94,7 +96,9 @@ def provide_data(split,
                  num_parallel_calls=None,
                  shuffle=True,
                  tfdata_source="celeb_a",
-                 domains=('Black_Hair', 'Blond_Hair', 'Brown_Hair')):
+                 domains=('Black_Hair', 'Blond_Hair', 'Brown_Hair'),
+                 download=True,
+                 data_dir=None):
     """Provides batches of CelebA image patches.
 
     Args:
@@ -131,9 +135,9 @@ def provide_data(split,
 
     else:
         ds = provide_dataset(split, batch_size, patch_size, num_parallel_calls,
-                             shuffle, tfdata_source, domains)
-
-
+                             shuffle, tfdata_source, domains,
+                             download=download,
+                             data_dir=data_dir)
 
         next_batch = tf.compat.v1.data.make_one_shot_iterator(ds).get_next()
         domains = next_batch.keys()

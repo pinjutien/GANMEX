@@ -28,7 +28,7 @@ import PIL
 provide_data = data_provider.provide_data
 
 
-def provide_celeba_test_set(patch_size, num_images=3):
+def provide_celeba_test_set(patch_size, download, data_dir, num_images=3):
   """Provide one example of every class.
 
   Args:
@@ -38,7 +38,7 @@ def provide_celeba_test_set(patch_size, num_images=3):
     An `np.array` of shape (num_domains, H, W, C) representing the images.
       Values are in [-1, 1].
   """
-  ds = tfds.load('celeb_a', split='test')
+  ds = tfds.load('celeb_a', download=download, data_dir=data_dir, split='test')
   def _preprocess(x):
     return {
         'image': cyclegan_dp.full_image_to_patch(x['image'], patch_size),

@@ -35,6 +35,8 @@ flags.DEFINE_string('tfdata_source', 'cycle_gan',
                     'load tf dataset. default=celeb_a')
 flags.DEFINE_string('tfdata_source_domains', 'Black_Hair,Blond_Hair,Brown_Hair',
                     'celeb_a domain: default=Black_Hair,Blond_Hair,Brown_Hair')
+flags.DEFINE_string('download', "True", "download data from tensorflow_datasets")
+flags.DEFINE_string('data_dir', None, "directly load data from data_dir")
 
 # FLAGS for training hyper-parameters.
 flags.DEFINE_float('generator_lr', 1e-4, 'The generator learning rate.')
@@ -69,7 +71,8 @@ def main(_):
                               FLAGS.steps_per_eval, FLAGS.adam_beta1,
                               FLAGS.adam_beta2, FLAGS.gen_disc_step_ratio,
                               FLAGS.master, FLAGS.ps_tasks, FLAGS.task,
-                              FLAGS.tfdata_source, FLAGS.tfdata_source_domains)
+                              FLAGS.tfdata_source, FLAGS.tfdata_source_domains,
+                              FLAGS.download, FLAGS.data_dir)
   train_lib.train(hparams)
 
 
