@@ -9,6 +9,9 @@ with `import tensorflow_gan as tfgan`
 * [Well-tested examples](https://github.com/tensorflow/gan/tree/master/tensorflow_gan/examples/)
 * [Interactive introduction to TF-GAN](https://github.com/tensorflow/gan/blob/master/tensorflow_gan/examples/colab_notebooks/tfgan_tutorial.ipynb) in colaboratory
 
+# How to run:
+* python -m pdb stargan_estimator/train.py --patch_size 256 --output_dir '/Users/pin-jutien/tmp/tfgan_logdir/stargan_estimator/out/' --cls_model "/Users/pin-jutien/tfds-download/models_ckpts/classification/a2o/apple2orange.h5"
+
 ## Structure of the TF-GAN Library
 
 TF-GAN is composed of several parts, which are designed to exist independently:
