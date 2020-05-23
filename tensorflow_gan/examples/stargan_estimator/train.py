@@ -50,6 +50,8 @@ flags.DEFINE_float('adam_beta1', 0.5, 'Adam Beta 1 for the Adam optimizer.')
 flags.DEFINE_float('adam_beta2', 0.999, 'Adam Beta 2 for the Adam optimizer.')
 flags.DEFINE_float('gen_disc_step_ratio', 0.2,
                    'Generator:Discriminator training step ratio.')
+flags.DEFINE_integer('save_checkpoints_steps', 10,
+                     'Save checkpoint every n step.')
 
 # FLAGS for distributed training.
 flags.DEFINE_string('master', '', 'Name of the TensorFlow master to use.')
@@ -73,7 +75,7 @@ def main(_):
                               FLAGS.adam_beta2, FLAGS.gen_disc_step_ratio,
                               FLAGS.master, FLAGS.ps_tasks, FLAGS.task,
                               FLAGS.tfdata_source, FLAGS.tfdata_source_domains,
-                              FLAGS.download, FLAGS.data_dir, FLAGS.cls_model)
+                              FLAGS.download, FLAGS.data_dir, FLAGS.cls_model, FLAGS.save_checkpoints_steps)
   train_lib.train(hparams)
 
 
