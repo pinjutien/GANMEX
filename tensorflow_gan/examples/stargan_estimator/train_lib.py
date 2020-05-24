@@ -35,8 +35,7 @@ HParams = collections.namedtuple('HParams', [
     'batch_size', 'patch_size', 'output_dir', 'generator_lr',
     'discriminator_lr', 'max_number_of_steps', 'steps_per_eval', 'adam_beta1',
     'adam_beta2', 'gen_disc_step_ratio', 'master', 'ps_tasks', 'task', 'tfdata_source', 'tfdata_source_domains',
-    'download', 'data_dir'
-])
+    'download', 'data_dir', 'cls_model', 'save_checkpoints_steps'])
 
 
 def _get_optimizer(gen_lr, dis_lr, beta1, beta2):
@@ -147,7 +146,9 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
       discriminator_optimizer=dis_opt,
       get_hooks_fn=tfgan.get_sequential_train_hooks(
           _define_train_step(hparams.gen_disc_step_ratio)),
-      add_summaries=tfgan.estimator.SummaryType.IMAGES)
+      add_summaries=tfgan.estimator.SummaryType.IMAGES,
+      config=tf.estimator.RunConfig(save_checkpoints_steps=hparams.save_checkpoints_steps)
+  )
 
   # Get input function for training and test images.
   if (hparams.tfdata_source):
