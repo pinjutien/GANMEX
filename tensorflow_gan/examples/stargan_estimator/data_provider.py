@@ -65,6 +65,30 @@ def provide_celeba_test_set(patch_size, download, data_dir, num_images=3):
 
   return images
 
+def provide_cyclegan_test_set(patch_size, num_images=3):
+  """Provide one example of every class.
+
+  Args:
+    patch_size: Python int. The patch size to extract.
+
+  Returns:
+    An `np.array` of shape (num_domains, H, W, C) representing the images.
+      Values are in [-1, 1].
+  """
+  ds = tfds.load('cycle_gan')
+
+  examples_apples = list(tfds.as_numpy(ds['testA'].take(num_images)))
+  examples_oranges = list(tfds.as_numpy(ds['testB'].take(num_images)))
+
+  images = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], patch_size)) for x in examples_apples + examples_oranges]
+  images = np.array(images, dtype=np.float32)
+
+  assert images.dtype == np.float32
+  assert np.max(np.abs(images)) <= 1.0
+  assert images.shape == (num_images, patch_size, patch_size, 3)
+
+  return images
+
 # def provide_celeba_test_set1(patch_size):
 #   """Provide one example of every class.
 
