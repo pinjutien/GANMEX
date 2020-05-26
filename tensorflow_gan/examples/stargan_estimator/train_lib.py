@@ -137,10 +137,17 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
                                     hparams.adam_beta1, hparams.adam_beta2)
 
   # Create estimator.
+  # cls_model = "/Users/pin-jutien/tfds-download/models_ckpts/classification/a2o/apple2orange.h5"
+  if hparams.cls_model:
+    print("[!!!!] LOAD customed classification model in discrimantor.")
+    network_discrimnator = network.custom_discriminator(hparams.cls_model)
+  else:
+    network_discrimnator = network.discriminator
   stargan_estimator = tfgan.estimator.StarGANEstimator(
       model_dir= hparams.output_dir + "checkpoints/",
       generator_fn=override_generator_fn or network.generator,
-      discriminator_fn=override_discriminator_fn or network.discriminator,
+      # discriminator_fn=override_discriminator_fn or network.discriminator,
+      discriminator_fn=override_discriminator_fn or network_discrimnator,
       loss_fn=tfgan.stargan_loss,
       generator_optimizer=gen_opt,
       discriminator_optimizer=dis_opt,
