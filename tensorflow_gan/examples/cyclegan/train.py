@@ -39,7 +39,7 @@ flags.DEFINE_float('generator_lr', 0.0002,
                    'The compression model learning rate.')
 flags.DEFINE_float('discriminator_lr', 0.0001,
                    'The discriminator learning rate.')
-flags.DEFINE_integer('max_number_of_steps', 5000000,
+flags.DEFINE_integer('max_number_of_steps', 1000000,
                      'The maximum number of gradient steps.')  # was 500000
 flags.DEFINE_integer(
     'ps_replicas', 0,

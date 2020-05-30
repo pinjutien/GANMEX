@@ -44,14 +44,18 @@ flags.DEFINE_float('generator_lr', 1e-4, 'The generator learning rate.')
 flags.DEFINE_float('discriminator_lr', 1e-4, 'The discriminator learning rate.')
 flags.DEFINE_integer('max_number_of_steps', 1000000,
                      'The maximum number of gradient steps.')
-flags.DEFINE_integer('steps_per_eval', 1000,
+flags.DEFINE_integer('steps_per_eval', 2000,
                      'The number of steps after which we write eval to disk.')
 flags.DEFINE_float('adam_beta1', 0.5, 'Adam Beta 1 for the Adam optimizer.')
 flags.DEFINE_float('adam_beta2', 0.999, 'Adam Beta 2 for the Adam optimizer.')
 flags.DEFINE_float('gen_disc_step_ratio', 0.2,
                    'Generator:Discriminator training step ratio.')
-flags.DEFINE_integer('save_checkpoints_steps', 10,
+flags.DEFINE_integer('save_checkpoints_steps', 2000,
                      'Save checkpoint every n step.')
+flags.DEFINE_integer('keep_checkpoint_max', 250, 'Max number of checkpoints to keep.')
+flags.DEFINE_float('reconstruction_loss_weight', 10.0, 'Default = 10.0')
+flags.DEFINE_float('classification_loss_weight', 5.0, 'Default = 1.0')
+
 
 # FLAGS for distributed training.
 flags.DEFINE_string('master', '', 'Name of the TensorFlow master to use.')
@@ -75,7 +79,9 @@ def main(_):
                               FLAGS.adam_beta2, FLAGS.gen_disc_step_ratio,
                               FLAGS.master, FLAGS.ps_tasks, FLAGS.task,
                               FLAGS.tfdata_source, FLAGS.tfdata_source_domains,
-                              FLAGS.download, FLAGS.data_dir, FLAGS.cls_model, FLAGS.save_checkpoints_steps)
+                              FLAGS.download, FLAGS.data_dir, FLAGS.cls_model,
+                              FLAGS.save_checkpoints_steps, FLAGS.keep_checkpoint_max,
+                              FLAGS.reconstruction_loss_weight, FLAGS.classification_loss_weight)
   train_lib.train(hparams)
 
 

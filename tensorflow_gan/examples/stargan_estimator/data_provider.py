@@ -65,7 +65,7 @@ def provide_celeba_test_set(patch_size, download, data_dir, num_images=3):
 
   return images
 
-def provide_cyclegan_test_set(patch_size, num_images=3):
+def provide_cyclegan_test_set(patch_size, num_images=6):
   """Provide one example of every class.
 
   Args:
@@ -77,10 +77,13 @@ def provide_cyclegan_test_set(patch_size, num_images=3):
   """
   ds = tfds.load('cycle_gan')
 
-  examples_apples = list(tfds.as_numpy(ds['testA'].take(num_images)))
-  examples_oranges = list(tfds.as_numpy(ds['testB'].take(num_images)))
+  num_images_B = num_images // 2
+  num_images_A = num_images - num_images_B
 
-  images = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], patch_size)) for x in examples_apples + examples_oranges]
+  examples_A = list(tfds.as_numpy(ds['testA'].take(num_images_A)))
+  examples_B = list(tfds.as_numpy(ds['testB'].take(num_images_B)))
+
+  images = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], patch_size)) for x in examples_A + examples_B]
   images = np.array(images, dtype=np.float32)
 
   assert images.dtype == np.float32
