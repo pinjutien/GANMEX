@@ -26,7 +26,7 @@ from tensorflow_gan.examples.stargan_estimator import train_lib
 
 # FLAGS for data.
 flags.DEFINE_integer('batch_size', 6, 'The number of images in each batch.')
-flags.DEFINE_integer('patch_size', 128, 'The patch size of images.')
+flags.DEFINE_integer('patch_size', 256, 'The patch size of images.')
 
 # Write-to-disk flags.
 flags.DEFINE_string('output_dir', '/tmp/tfgan_logdir/stargan_estimator/out/',

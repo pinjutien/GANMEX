@@ -99,3 +99,14 @@ def discriminator(input_net, class_num):
     output_cls = layers.discriminator_output_class(hidden, class_num)
 
   return output_src, output_cls
+
+def custom_discriminator(model_path):
+  def _custom_discriminator(input_net, class_num):
+    # model_path = "/Users/pin-jutien/tfds-download/models_ckpts/classification/a2o/apple2orange.h5"
+    model= tf.keras.models.load_model(model_path)
+    fModel = tf.keras.models.Model(inputs=model.input, outputs = model.output)
+    fModel.trainable = False
+    output_cls = fModel(input_net)
+    output_src, _ = discriminator(input_net, class_num)
+    return output_src, output_cls
+  return _custom_discriminator
