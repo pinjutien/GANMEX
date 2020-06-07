@@ -22,6 +22,8 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import os
+import PIL
 
 
 def normalize_image(image):
@@ -236,3 +238,32 @@ def provide_custom_data(batch_size,
       ts.set_shape(partial_shape)
 
   return tensors
+
+
+
+
+def decode_img(img):
+    # convert the compressed string to a 3D uint8 tensor
+    img = tf.image.decode_jpeg(img, channels=3)
+    # Use `convert_image_dtype` to convert to floats in the [0,1] range.
+    img = tf.image.convert_image_dtype(img, tf.float32)
+    # resize the image to the desired size.
+    # return tf.image.resize(img, [IMG_HEIGHT, IMG_WIDTH])
+    return img
+
+
+def get_image(path):
+    # img = tf.io.read_file(path)
+    # img = decode_img(img) # [0,1]
+    # [0, 255]
+    img = np.asarray(PIL.Image.open(path)) 
+    return img
+
+  
+def load_data_from(paths):
+    images = []
+    for i in range(len(paths)):
+        p = paths[i]
+        # fn = os.path.basename(p)
+        images += [{'image': get_image(p)}]
+    return images
