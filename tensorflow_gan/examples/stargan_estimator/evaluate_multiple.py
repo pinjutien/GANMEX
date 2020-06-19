@@ -71,9 +71,9 @@ def make_summary_images(checkpoint_dir, checkpoint_struct, dataset_name, num_exa
     ds = tfds.load(dataset_name)
     examples_apples = list(tfds.as_numpy(ds['testA'].take(num_examples)))
     examples_oranges = list(tfds.as_numpy(ds['testB'].take(num_examples)))
-    input_apples = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], 128)).astype('float32') for x in
+    input_apples = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], 256)).astype('float32') for x in
                     examples_apples]
-    input_oranges = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], 128)).astype('float32') for x in
+    input_oranges = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], 256)).astype('float32') for x in
                      examples_oranges]
 
     stargan_estimator = tfgan.estimator.StarGANEstimator(

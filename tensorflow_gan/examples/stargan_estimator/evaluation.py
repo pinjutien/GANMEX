@@ -138,7 +138,7 @@ if __name__ == '__main__':
       "input_data": "./testdata/*.png",
       "output_dir": "./exps/stargan_estimator_output5/",
       "tfdata_source_domains": 'Black_Hair,Blond_Hair,Brown_Hair',
-      "patch_size": 128
+      "patch_size": 256
     }
     # with open('./exps/stargan_estimator/train_result.json') as f:
     #   data = json.load(f)
