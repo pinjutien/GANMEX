@@ -29,7 +29,8 @@ flags.DEFINE_integer('batch_size', 6, 'The number of images in each batch.')
 flags.DEFINE_integer('patch_size', 256, 'The patch size of images.')
 
 # Write-to-disk flags.
-flags.DEFINE_string('output_dir', '/tmp/tfgan_logdir/stargan_estimator/out/',
+flags.DEFINE_string('output_dir', '/tmp/tfgan_logdir_temp/stargan_estimator/out/',
+                    # '/tmp/tfgan_logdir_glr2m5_gd1_ab09_875886_T100/stargan_estimator/out/',
                     'Directory where to write summary image.')
 flags.DEFINE_string('tfdata_source', 'cycle_gan',
                     'load tf dataset. default=celeb_a')
@@ -37,7 +38,10 @@ flags.DEFINE_string('tfdata_source_domains', 'Black_Hair,Blond_Hair,Brown_Hair',
                     'celeb_a domain: default=Black_Hair,Blond_Hair,Brown_Hair')
 flags.DEFINE_string('download', "True", "download data from tensorflow_datasets")
 flags.DEFINE_string('data_dir', None, "directly load data from data_dir")
-flags.DEFINE_string('cls_model', None, "load classification model in discrimnator of stargan")
+flags.DEFINE_string('cls_model', None,
+                    # '/home/ec2-user/gan/test_model/model-032-0.875886.h5',
+                    # "/home/ec2-user/apple2orange.h5", #'/Users/shengms/Code/gan_checkpoints/apple2orange.h5',  #
+                    "load classification model in discrimnator of stargan")
 
 # FLAGS for training hyper-parameters.
 flags.DEFINE_float('generator_lr', 2e-5, 'The generator learning rate. Default = 1e-4')
@@ -46,7 +50,7 @@ flags.DEFINE_integer('max_number_of_steps', 1000000,
                      'The maximum number of gradient steps.')
 flags.DEFINE_integer('steps_per_eval', 2000,
                      'The number of steps after which we write eval to disk.')
-flags.DEFINE_float('adam_beta1', 0.5, 'Adam Beta 1 for the Adam optimizer.')
+flags.DEFINE_float('adam_beta1', 0.9, 'Adam Beta 1 for the Adam optimizer.')
 flags.DEFINE_float('adam_beta2', 0.999, 'Adam Beta 2 for the Adam optimizer.')
 flags.DEFINE_float('gen_disc_step_ratio', 1.0,
                    'Generator:Discriminator training step ratio. Default = 0.2')

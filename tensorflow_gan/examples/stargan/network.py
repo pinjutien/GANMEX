@@ -65,7 +65,7 @@ def generator(inputs, targets):
   return up_sample
 
 
-def discriminator(input_net, class_num):
+def discriminator(input_net, class_num, trainable=False):
   """Discriminator Module.
 
   Piece everything together and reshape the output source tensor
@@ -90,23 +90,27 @@ def discriminator(input_net, class_num):
 
   with tf.compat.v1.variable_scope('discriminator'):
 
-    hidden = layers.discriminator_input_hidden(input_net)
+    hidden = layers.discriminator_input_hidden(input_net, trainable=trainable)
 
-    output_src = layers.discriminator_output_source(hidden)
+    output_src = layers.discriminator_output_source(hidden, trainable=True)
     output_src = tf.compat.v1.layers.flatten(output_src)
     output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
 
-    output_cls = layers.discriminator_output_class(hidden, class_num)
+    output_cls = layers.discriminator_output_class(hidden, class_num, trainable=True)
 
   return output_src, output_cls
+
 
 def custom_discriminator(model_path):
   def _custom_discriminator(input_net, class_num):
     # model_path = "/Users/pin-jutien/tfds-download/models_ckpts/classification/a2o/apple2orange.h5"
-    model= tf.keras.models.load_model(model_path)
-    fModel = tf.keras.models.Model(inputs=model.input, outputs = model.output)
+    model = tf.keras.models.load_model(model_path)
+
+    fModel = tf.keras.models.Model(inputs=model.input, outputs=model.layers[-2].output)
     fModel.trainable = False
-    output_cls = fModel(input_net)
+    # output_cls = fModel(input_net * 2.0 - 1.0)
+    output_cls = fModel((input_net + 1.0) / 2.0)
     output_src, _ = discriminator(input_net, class_num)
-    return output_src, output_cls
+
+    return output_src, output_cls #/ 100.0
   return _custom_discriminator

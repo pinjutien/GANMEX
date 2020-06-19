@@ -181,6 +181,9 @@ class StarGANEstimator(tf.estimator.Estimator):
                                 input_data, input_data_domain_label,
                                 add_summaries)
 
+      # tf.train.init_from_checkpoint('/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/model.ckpt-130000',
+      #                               {'Discriminator/discriminator/discriminator_input_hidden/': 'Discriminator/discriminator/discriminator_input_hidden/'})
+
       # Make the EstimatorSpec, which incorporates the StarGANModel, losses,
       # eval, metrics, and optimizers (if required).
       return get_estimator_spec(mode, gan_model, loss_fn,
@@ -199,7 +202,7 @@ def get_gan_model(mode,
                   add_summaries,
                   generator_scope='Generator'):
   """Makes the StarGANModel tuple."""
-  if mode == tf.estimator.ModeKeys.PREDICT:
+  if False: # mode == tf.estimator.ModeKeys.PREDICT:
     gan_model = _make_prediction_gan_model(input_data, input_data_domain_label,
                                            generator_fn, generator_scope)
   else:  # tf.estimator.ModeKeys.TRAIN or tf.estimator.ModeKeys.EVAL
@@ -210,6 +213,15 @@ def get_gan_model(mode,
   return gan_model
 
 
+class RestoreHook(tf.train.SessionRunHook):
+    def __init__(self, init_fn):
+        self.init_fn = init_fn
+
+    def after_create_session(self, session, coord=None):
+        if session.run(tf.train.get_or_create_global_step()) == 0:
+            self.init_fn(session)
+
+
 def get_estimator_spec(mode,
                        gan_model,
                        loss_fn,
@@ -218,9 +230,52 @@ def get_estimator_spec(mode,
                        discriminator_optimizer,
                        get_hooks_fn=None):
   """Get the EstimatorSpec for the current mode."""
+
+  # var_list = []
+  # for var in tf.trainable_variables():
+  #   print(var.name)
+  #   if var.name.startswith('Discriminator/discriminator/'):
+  #      var_list.append(var)
+
+  # var_list = [
+  #   'Discriminator/discriminator/discriminator_input_hidden/conv_0/kernel:0',
+  #   'Discriminator/discriminator/discriminator_input_hidden/conv_1/kernel:0',
+  #   'Discriminator/discriminator/discriminator_input_hidden/conv_2/kernel:0',
+  #   'Discriminator/discriminator/discriminator_input_hidden/conv_3/kernel:0',
+  #   'Discriminator/discriminator/discriminator_input_hidden/conv_4/kernel:0',
+  #   'Discriminator/discriminator/discriminator_input_hidden/conv_5/kernel:0',
+  #   'Discriminator/discriminator/discriminator_output_source/conv/kernel:0',
+  #   'Discriminator/discriminator/discriminator_output_class/fully_connected/kernel:0'
+  # ]
+
+  # init_fn = tf.contrib.framework.assign_from_checkpoint_fn('/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/model.ckpt-130000',
+  #                                                          var_list, ignore_missing_vars=True)
+
   if mode == tf.estimator.ModeKeys.PREDICT:
     estimator_spec = tf.estimator.EstimatorSpec(
-        mode=mode, predictions=gan_model.generated_data)
+        mode=mode,
+        predictions={
+            # 'image': gan_model.generated_data,
+            # 'label': gan_model.gan_model.generated_data_domain_target
+
+            'input_data': gan_model.input_data,
+            'input_data_domain_label': gan_model.input_data_domain_label,
+            'generated_data': gan_model.generated_data,
+            'generated_data_domain_target': gan_model.generated_data_domain_target,
+            'reconstructed_data': gan_model.reconstructed_data,
+            'discriminator_input_data_source_predication': gan_model.discriminator_input_data_source_predication,
+            'discriminator_generated_data_source_predication': gan_model.discriminator_generated_data_source_predication,
+            'discriminator_input_data_domain_predication': gan_model.discriminator_input_data_domain_predication,
+            'discriminator_generated_data_domain_predication': gan_model.discriminator_generated_data_domain_predication,
+            # 'generator_variables': gan_model.generator_variables,
+            # 'generator_scope': gan_model.generator_scope,
+            # 'generator_fn': gan_model.generator_fn,
+            # 'discriminator_variables': gan_model.discriminator_variables,
+            # 'discriminator_scope': gan_model.discriminator_scope,
+            # 'discriminator_fn': gan_model.discriminator_fn
+        },
+        # training_hooks=[RestoreHook(init_fn)]
+    )
   else:
     gan_loss = loss_fn(gan_model)
     if mode == tf.estimator.ModeKeys.EVAL:
@@ -330,6 +385,21 @@ def _get_eval_estimator_spec(gan_model,
       eval_metric_ops=eval_metric_ops)
 
 
+
+
+# class RestoreHook(tf.train.SessionRunHook):
+#     def __init__(self, init_fn):
+#         self.init_fn = init_fn
+#
+#     def after_create_session(self, session, coord=None):
+#         if session.run(tf.train.get_or_create_global_step()) == 0:
+#             self.init_fn(session)
+
+
+
+
+
+
 def _get_train_estimator_spec(gan_model,
                               gan_loss,
                               generator_optimizer,
@@ -341,11 +411,36 @@ def _get_train_estimator_spec(gan_model,
   train_ops = train_op_fn(gan_model, gan_loss, generator_optimizer,
                           discriminator_optimizer)
   training_hooks = get_hooks_fn(train_ops)
+
+
+  var_list = []
+  for var in tf.global_variables(): # was trainable_variables()
+    print(var.name)
+    if var.name.startswith('Discriminator/discriminator/'):
+       var_list.append(var)
+
+  # checkpoint_state = tf.train.get_checkpoint_state('pretrained')
+  # input_checkpoint = checkpoint_state.model_checkpoint_path
+  pretrain_saver = tf.train.Saver(var_list)
+
+  def init_fn(scaffold, session):
+      pretrain_saver.restore(session, '/home/ec2-user/gan_checkpoints/tfgan_logdir_glr2m5_gd1_ab09/stargan_estimator/out/checkpoints/model.ckpt-130000')
+                             #'/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/model.ckpt-130000')
+
+  # init_fn = tf.contrib.framework.assign_from_checkpoint_fn(
+  #     '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/model.ckpt-130000',
+  #     var_list, ignore_missing_vars=True)
+
+  # training_hooks.append(RestoreHook(init_fn))
+
+
   return tf.estimator.EstimatorSpec(
       loss=scalar_loss,
       mode=tf.estimator.ModeKeys.TRAIN,
       train_op=train_ops.global_step_inc_op,
-      training_hooks=training_hooks)
+      training_hooks=training_hooks,
+      scaffold=tf.train.Scaffold(init_fn=init_fn)
+  )
 
 
 def stargan_prediction_input_fn_wrapper(fn):

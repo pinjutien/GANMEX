@@ -32,7 +32,7 @@ import tensorflow_gan as tfgan
 from tensorflow_gan.examples.stargan import ops
 
 
-def _conv2d(inputs, filters, kernel_size, stride, name):
+def _conv2d(inputs, filters, kernel_size, stride, name, trainable=True):
   """Conv2d for the network."""
   return tf.compat.v1.layers.conv2d(
       inputs,
@@ -41,7 +41,9 @@ def _conv2d(inputs, filters, kernel_size, stride, name):
       strides=stride,
       padding='VALID',
       use_bias=False,
-      name=name)
+      name=name,
+      trainable=trainable
+  )
 
 
 def _conv2d_transpose(inputs, filters, kernel_size, stride, name):
@@ -295,7 +297,7 @@ def generator_up_sample(input_net, num_outputs):
   return output_net
 
 
-def discriminator_input_hidden(input_net, hidden_layer=6, init_num_outputs=64):
+def discriminator_input_hidden(input_net, hidden_layer=6, init_num_outputs=64, trainable=True):
   """Input Layer + Hidden Layer in the Discriminator.
 
   Feature extraction pathway in the Discriminator.
@@ -329,7 +331,8 @@ def discriminator_input_hidden(input_net, hidden_layer=6, init_num_outputs=64):
           filters=num_outputs,
           kernel_size=4,
           stride=2,
-          name='conv_{}'.format(i))
+          name='conv_{}'.format(i),
+          trainable=trainable)
       hidden = tf.nn.leaky_relu(hidden, alpha=0.01)
 
       num_outputs = 2 * num_outputs
@@ -337,7 +340,7 @@ def discriminator_input_hidden(input_net, hidden_layer=6, init_num_outputs=64):
   return hidden
 
 
-def discriminator_output_source(input_net):
+def discriminator_output_source(input_net, trainable=True):
   """Output Layer for Source in the Discriminator.
 
   Determine if the image is real/fake based on the feature extracted. We follow
@@ -363,12 +366,13 @@ def discriminator_output_source(input_net):
         filters=1,
         kernel_size=3,
         stride=1,
-        name='conv')
+        name='conv',
+        trainable=trainable)
 
   return output_src
 
 
-def discriminator_output_class(input_net, class_num):
+def discriminator_output_class(input_net, class_num, trainable=True):
   """Output Layer for Domain Classification in the Discriminator.
 
   The original paper use convolution layer where the kernel size is the height
@@ -393,6 +397,7 @@ def discriminator_output_class(input_net, class_num):
         inputs=output_cls,
         units=class_num,
         use_bias=False,
-        name='fully_connected')
+        name='fully_connected',
+        trainable=trainable)
 
   return output_cls
