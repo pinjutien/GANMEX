@@ -12,9 +12,10 @@ import PIL
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import tensorflow_gan as tfgan
-
+from glob import glob
 from tensorflow_gan.examples.stargan import network
 from tensorflow_gan.examples.cyclegan import data_provider as cyclegan_dp
+from tensorflow_gan.examples.cyclegan.data_provider import load_data_from
 
 
 def translate_images(estimator, test_images_list, label, checkpoint_path, num_domains):
@@ -67,7 +68,6 @@ def get_checkpoint_struct(checkpoint_dir, increments=[2000, 10000]):
 
 def make_summary_images(checkpoint_dir, checkpoint_struct, dataset_name, num_examples=10):
 
-
     ds = tfds.load(dataset_name)
     examples_apples = list(tfds.as_numpy(ds['testA'].take(num_examples)))
     examples_oranges = list(tfds.as_numpy(ds['testB'].take(num_examples)))
@@ -109,6 +109,8 @@ def make_summary_images(checkpoint_dir, checkpoint_struct, dataset_name, num_exa
         with tf.io.gfile.GFile(checkpoint_dir + 'summary_orange_' + key + '.png', 'w') as f:
             PIL.Image.fromarray((255 * summary_orange).astype(np.uint8)).save(f, 'PNG')
 
+
+
 # checkpoint_path_pattern = '/Users/shengms/Code/gan_checkpoints/stargan_est_a2o_rw10/model.ckpt-%d'
 # checkpoint_numbers = list(range(10000, 140001, 10000))
 #
@@ -117,9 +119,10 @@ def make_summary_images(checkpoint_dir, checkpoint_struct, dataset_name, num_exa
 
 
 if __name__ == '__main__':
-    checkpoint_dir = '/tmp/tfgan_logdir/stargan_estimator/out/checkpoints/'
+    # checkpoint_dir = '/tmp/tfgan_logdir/stargan_estimator/out/checkpoints/'
+    checkpoint_dir = "/Users/pin-jutien/tfds-download/models_ckpts/stargan_est_glr2m5_gd1/"
     if checkpoint_dir[-1] != '/':
         checkpoint_dir += '/'
-
+    data_dir = "/Users/pin-jutien/tfds-download/apple2orange/"
     checkpoint_struct = get_checkpoint_struct(checkpoint_dir, increments=[10000])
     make_summary_images(checkpoint_dir, checkpoint_struct, 'cycle_gan', num_examples=10)
