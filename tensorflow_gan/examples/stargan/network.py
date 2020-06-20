@@ -65,7 +65,7 @@ def generator(inputs, targets):
   return up_sample
 
 
-def discriminator(input_net, class_num, trainable=False):
+def discriminator(input_net, class_num):
   """Discriminator Module.
 
   Piece everything together and reshape the output source tensor
@@ -90,18 +90,18 @@ def discriminator(input_net, class_num, trainable=False):
 
   with tf.compat.v1.variable_scope('discriminator'):
 
-    hidden = layers.discriminator_input_hidden(input_net, trainable=trainable)
+    hidden = layers.discriminator_input_hidden(input_net)
 
-    output_src = layers.discriminator_output_source(hidden, trainable=True)
+    output_src = layers.discriminator_output_source(hidden)
     output_src = tf.compat.v1.layers.flatten(output_src)
     output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
 
-    output_cls = layers.discriminator_output_class(hidden, class_num, trainable=True)
+    output_cls = layers.discriminator_output_class(hidden, class_num)
 
   return output_src, output_cls
 
 
-def custom_discriminator(model_path):
+def custom_keras_discriminator(model_path):
   def _custom_discriminator(input_net, class_num):
     # model_path = "/Users/pin-jutien/tfds-download/models_ckpts/classification/a2o/apple2orange.h5"
     model = tf.keras.models.load_model(model_path)
@@ -114,3 +114,33 @@ def custom_discriminator(model_path):
 
     return output_src, output_cls #/ 100.0
   return _custom_discriminator
+
+
+def custom_tf_discriminator(shared_embedding=False):
+  if shared_embedding:
+    def _custom_discriminator(input_net, class_num):
+      with tf.compat.v1.variable_scope('discriminator'):
+        hidden_src = layers.discriminator_input_hidden(input_net, scope='discriminator_input_hidden_source')
+        output_src = layers.discriminator_output_source(hidden_src)
+        output_src = tf.compat.v1.layers.flatten(output_src)
+        output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
+
+        hidden_cls = layers.discriminator_input_hidden(input_net, trainable=False)
+        output_cls = layers.discriminator_output_class(hidden_cls, class_num, trainable=False)
+
+      return output_src, output_cls
+    return _custom_discriminator
+
+  else:
+    def _custom_discriminator(input_net, class_num):
+      with tf.compat.v1.variable_scope('discriminator'):
+        hidden = layers.discriminator_input_hidden(input_net, trainable=False)
+
+        output_src = layers.discriminator_output_source(hidden)
+        output_src = tf.compat.v1.layers.flatten(output_src)
+        output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
+
+        output_cls = layers.discriminator_output_class(hidden, class_num, trainable=False)
+
+      return output_src, output_cls
+    return _custom_discriminator

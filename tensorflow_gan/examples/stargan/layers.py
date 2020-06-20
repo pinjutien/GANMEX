@@ -297,7 +297,8 @@ def generator_up_sample(input_net, num_outputs):
   return output_net
 
 
-def discriminator_input_hidden(input_net, hidden_layer=6, init_num_outputs=64, trainable=True):
+def discriminator_input_hidden(input_net, hidden_layer=6, init_num_outputs=64,
+                               scope='discriminator_input_hidden', trainable=True):
   """Input Layer + Hidden Layer in the Discriminator.
 
   Feature extraction pathway in the Discriminator.
@@ -319,7 +320,7 @@ def discriminator_input_hidden(input_net, hidden_layer=6, init_num_outputs=64, t
 
   num_outputs = init_num_outputs
 
-  with tf.compat.v1.variable_scope('discriminator_input_hidden'):
+  with tf.compat.v1.variable_scope(scope):
 
     hidden = input_net
 
