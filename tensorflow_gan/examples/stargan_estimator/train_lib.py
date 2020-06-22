@@ -266,13 +266,17 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
   # Create estimator.
   if hparams.cls_model:
     print("[!!!!] LOAD custom classification model in discriminator.")
-    network_discriminator = network.custom_keras_discriminator(hparams.cls_model)
+
+    network_discriminator = network.CustomKerasDiscriminator(hparams.cls_model)
+    # network_discriminator = network.custom_keras_discriminator(hparams.cls_model)
+
+    # tf.keras.estimator.model_to_estimator(keras_model_path=hparams.cls_model, model_dir='/tmp/temp_checkpoint/')
+
+
   elif hparams.cls_checkpoint:
-    network_discriminator = network.custom_tf_discriminator()
+    network_discriminator = network.custom_tf_discriminator(shared_embedding=False)
   else:
     network_discriminator = network.discriminator
-
-  network_discriminator = network.custom_tf_discriminator(shared_embedding=False)
 
   stargan_estimator = tfgan.estimator.StarGANEstimator(
       model_dir= hparams.output_dir + "checkpoints/",

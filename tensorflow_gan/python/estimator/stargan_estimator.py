@@ -36,6 +36,8 @@ __all__ = [
 ]
 
 
+PREDICT_FLAG = False  # only for evaluate_single.py
+
 class SummaryType(enum.IntEnum):
   NONE = 0
   VARIABLES = 1
@@ -200,7 +202,7 @@ def get_gan_model(mode,
                   add_summaries,
                   generator_scope='Generator'):
   """Makes the StarGANModel tuple."""
-  if mode == tf.estimator.ModeKeys.PREDICT:
+  if not PREDICT_FLAG and mode == tf.estimator.ModeKeys.PREDICT:
     gan_model = _make_prediction_gan_model(input_data, input_data_domain_label,
                                            generator_fn, generator_scope)
   else:  # tf.estimator.ModeKeys.TRAIN or tf.estimator.ModeKeys.EVAL
@@ -221,10 +223,26 @@ def get_estimator_spec(mode,
                        cls_checkpoint=None):
   """Get the EstimatorSpec for the current mode."""
 
+  if PREDICT_FLAG:
+      predictions = {
+          'input_data': gan_model.input_data,
+          'input_data_domain_label': gan_model.input_data_domain_label,
+          'generated_data': gan_model.generated_data,
+          'generated_data_domain_target': gan_model.generated_data_domain_target,
+          'reconstructed_data': gan_model.reconstructed_data,
+          'discriminator_input_data_source_predication': gan_model.discriminator_input_data_source_predication,
+          'discriminator_generated_data_source_predication': gan_model.discriminator_generated_data_source_predication,
+          'discriminator_input_data_domain_predication': gan_model.discriminator_input_data_domain_predication,
+          'discriminator_generated_data_domain_predication': gan_model.discriminator_generated_data_domain_predication,
+      }
+  else:
+      predictions = gan_model.generated_data
+
   if mode == tf.estimator.ModeKeys.PREDICT:
     estimator_spec = tf.estimator.EstimatorSpec(
         mode=mode,
-        predictions=gan_model.generated_data
+        predictions=predictions
+        # predictions=gan_model.generated_data
         # predictions={
         #     'input_data': gan_model.input_data,
         #     'input_data_domain_label': gan_model.input_data_domain_label,
@@ -359,7 +377,7 @@ def _get_train_estimator_spec(gan_model,
                           discriminator_optimizer)
   training_hooks = get_hooks_fn(train_ops)
 
-  if cls_checkpoint:
+  if cls_checkpoint: # True:
     # Load pre-trained parameters here
     var_list = []
 
@@ -374,8 +392,10 @@ def _get_train_estimator_spec(gan_model,
 
     def init_fn(_scaffold, session):
       pretrain_saver.restore(session,
+                             '/tmp/temp_checkpoint/keras/keras_model.ckpt')
+
                              # '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/model.ckpt-130000')
-                             '/home/ec2-user/gan_checkpoints/tfgan_logdir_glr2m5_gd1_ab09/stargan_estimator/out/checkpoints/model.ckpt-130000')
+                             # '/home/ec2-user/gan_checkpoints/tfgan_logdir_glr2m5_gd1_ab09/stargan_estimator/out/checkpoints/model.ckpt-130000')
 
     # def init_fn(_scaffold, _session):
     #     tf.compat.v1.train.init_from_checkpoint(

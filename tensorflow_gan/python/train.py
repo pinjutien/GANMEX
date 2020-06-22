@@ -42,6 +42,14 @@ from tensorflow_gan.python import namedtuples
 from tensorflow_gan.python.losses import losses_wargs
 from tensorflow_gan.python.losses import tuple_losses
 
+from tensorflow_gan.examples.stargan import network
+
+# from tensorflow_gan.examples.stargan import layers
+# from tensorflow_gan.examples.stargan import ops
+#
+# from tensorflow.keras.layers import Activation, Dense, Flatten
+
+
 __all__ = [
     'gan_model',
     'infogan_model',
@@ -460,15 +468,54 @@ def stargan_model(generator_fn,
   with tf.compat.v1.variable_scope(generator_scope, reuse=True):
     reconstructed_data = generator_fn(generated_data, input_data_domain_label)
 
+  if isinstance(discriminator_fn, network.CustomKerasDiscriminator):
+      with tf.compat.v1.variable_scope(discriminator_scope, reuse=tf.compat.v1.AUTO_REUSE) as discriminator_scope:
+        discriminator_fn.initialize_network()
+
+  # discriminator_scope = 'tempscope'
+  # with tf.compat.v1.variable_scope(discriminator_scope) as discriminator_scope:
+  #   dense_layer = Dense(2, activation=None)
+  #
+  #   model = tf.keras.models.load_model(
+  #   '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09_875886/model-032-0.875886.h5')
+  #   fModel = tf.keras.models.Model(inputs=model.input, outputs=model.layers[-2].output)
+  #   fModel.trainable = False
+
   # Predict source and domain for the generated_data using the discriminator.
-  with tf.compat.v1.variable_scope(discriminator_scope) as discriminator_scope:
+  with tf.compat.v1.variable_scope(discriminator_scope, reuse=tf.compat.v1.AUTO_REUSE) as discriminator_scope:
     disc_gen_data_source_pred, disc_gen_data_domain_pred = discriminator_fn(
         generated_data, num_domains)
+
+
+    # hidden_src = layers.discriminator_input_hidden(generated_data, scope='discriminator_input_hidden_source')
+    # output_src = layers.discriminator_output_source(hidden_src)
+    # output_src = tf.compat.v1.layers.flatten(output_src)
+    # disc_gen_data_source_pred = tf.reduce_mean(input_tensor=output_src, axis=1)
+    #
+    # disc_gen_data_domain_pred = fModel((generated_data + 1.0) / 2.0)
+
+    #
+    # flat1 = Flatten()(generated_data)
+    # disc_gen_data_domain_pred = dense_layer(flat1)
+
 
   # Predict source and domain for the input_data using the discriminator.
   with tf.compat.v1.variable_scope(discriminator_scope, reuse=True):
     disc_input_data_source_pred, disc_input_data_domain_pred = discriminator_fn(
         input_data, num_domains)
+
+
+    # hidden_src = layers.discriminator_input_hidden(input_data, scope='discriminator_input_hidden_source')
+    # output_src = layers.discriminator_output_source(hidden_src)
+    # output_src = tf.compat.v1.layers.flatten(output_src)
+    # disc_input_data_source_pred = tf.reduce_mean(input_tensor=output_src, axis=1)
+    #
+    # disc_input_data_domain_pred = fModel((generated_data + 1.0) / 2.0)
+
+    #
+    # flat1 = Flatten()(input_data)
+    # disc_input_data_domain_pred = dense_layer(flat1)
+
 
   # Collect trainable variables from the neural networks.
   generator_variables = contrib.get_trainable_variables(
