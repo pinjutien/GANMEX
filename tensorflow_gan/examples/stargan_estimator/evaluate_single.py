@@ -15,7 +15,9 @@ import tensorflow_gan as tfgan
 
 from tensorflow_gan.examples.stargan import network
 from tensorflow_gan.examples.cyclegan import data_provider as cyclegan_dp
+from tensorflow_gan.python.estimator import stargan_estimator
 
+stargan_estimator.PREDICT_FLAG = True
 
 def translate_images(estimator, test_images_list, label, checkpoint_path, num_domains):
     """Returns a numpy image of the generate on the test images."""
@@ -34,8 +36,6 @@ def translate_images(estimator, test_images_list, label, checkpoint_path, num_do
 
     prediction_iterable = estimator.predict(test_input_fn, checkpoint_path=checkpoint_path)
     predictions = [next(prediction_iterable) for _ in range(len(test_images_list))]  # range(len(test_images_list))]
-    normalized_summary = [result for result in predictions]
-
     normalized_summary = [(result + 1.0) / 2.0 for result in predictions]
     return normalized_summary
 
@@ -51,10 +51,13 @@ def make_summary_images(checkpoint_dir, checkpoint_file, dataset_name, num_examp
     input_oranges = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], 256)).astype('float32') for x in
                      examples_oranges]
 
+    discriminator_fn = network.discriminator
+    # discriminator_fn = network.CustomKerasDiscriminator('/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09_875886/model-032-0.875886.h5')
+
     stargan_estimator = tfgan.estimator.StarGANEstimator(
         model_dir=None,
         generator_fn=network.generator,
-        discriminator_fn=network.discriminator,
+        discriminator_fn=discriminator_fn,
         loss_fn=tfgan.stargan_loss,
         add_summaries=tfgan.estimator.SummaryType.IMAGES
     )
@@ -83,11 +86,17 @@ def make_summary_images(checkpoint_dir, checkpoint_file, dataset_name, num_examp
 
 
 if __name__ == '__main__':
-    checkpoint_dir = '/tmp/tfgan_logdir_temp/stargan_estimator/out/checkpoints/'
-    checkpoint_file = 'model.ckpt-0'
+    # checkpoint_dir = '/tmp/tfgan_logdir_875886_temp/stargan_estimator/out/checkpoints/'
+    # checkpoint_file = 'model.ckpt-0'
 
     # checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/'
     # checkpoint_file = 'model.ckpt-130000'
+
+    checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_share1/'
+    checkpoint_file = 'model.ckpt-0'
+
+    # checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_875886_temp/'
+    # checkpoint_file = 'model.ckpt-100'
 
     if checkpoint_dir[-1] != '/':
         checkpoint_dir += '/'
