@@ -51,8 +51,8 @@ def make_summary_images(checkpoint_dir, checkpoint_file, dataset_name, num_examp
     input_oranges = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], 256)).astype('float32') for x in
                      examples_oranges]
 
-    discriminator_fn = network.discriminator
-    # discriminator_fn = network.CustomKerasDiscriminator('/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09_875886/model-032-0.875886.h5')
+    # discriminator_fn = network.discriminator
+    discriminator_fn = network.CustomKerasDiscriminator('/Users/shengms/Code/gan/tensorflow_gan/examples/classification/test_model/test_a2o/base_model.h5')
 
     stargan_estimator = tfgan.estimator.StarGANEstimator(
         model_dir=None,
@@ -86,14 +86,14 @@ def make_summary_images(checkpoint_dir, checkpoint_file, dataset_name, num_examp
 
 
 if __name__ == '__main__':
-    # checkpoint_dir = '/tmp/tfgan_logdir_875886_temp/stargan_estimator/out/checkpoints/'
-    # checkpoint_file = 'model.ckpt-0'
+    checkpoint_dir = '/tmp/tfgan_logdir_875886_temp/stargan_estimator/out/checkpoints/'
+    checkpoint_file = 'model.ckpt-0'
 
     # checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/'
     # checkpoint_file = 'model.ckpt-130000'
 
-    checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_share1/'
-    checkpoint_file = 'model.ckpt-0'
+    # checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_share1_b/'
+    # checkpoint_file = 'model.ckpt-20000'
 
     # checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_875886_temp/'
     # checkpoint_file = 'model.ckpt-100'

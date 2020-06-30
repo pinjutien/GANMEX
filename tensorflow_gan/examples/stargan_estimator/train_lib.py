@@ -264,17 +264,20 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
                                     hparams.adam_beta1, hparams.adam_beta2)
 
   # Create estimator.
+  if hparams.cls_model and hparams.cls_checkpoint:
+    raise Exception('Can only assign one parameter between hparams.cls_model and hparams.cls_checkpoint')
+
   if hparams.cls_model:
     print("[!!!!] LOAD custom classification model in discriminator.")
 
-    network_discriminator = network.CustomKerasDiscriminator(hparams.cls_model)
+    network_discriminator = network.CustomKerasDiscriminator(hparams.cls_model + '/base_model.h5')
     # network_discriminator = network.custom_keras_discriminator(hparams.cls_model)
 
     # tf.keras.estimator.model_to_estimator(keras_model_path=hparams.cls_model, model_dir='/tmp/temp_checkpoint/')
 
 
   elif hparams.cls_checkpoint:
-    network_discriminator = network.custom_tf_discriminator(shared_embedding=False)
+    network_discriminator = network.custom_tf_discriminator()
   else:
     network_discriminator = network.discriminator
 
@@ -292,6 +295,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
       add_summaries=tfgan.estimator.SummaryType.IMAGES,
       config=tf.estimator.RunConfig(save_checkpoints_steps=hparams.save_checkpoints_steps,
                                     keep_checkpoint_max=hparams.keep_checkpoint_max),
+      cls_model=hparams.cls_model,
       cls_checkpoint=hparams.cls_checkpoint
   )
 

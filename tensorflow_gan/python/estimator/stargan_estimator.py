@@ -110,6 +110,7 @@ class StarGANEstimator(tf.estimator.Estimator):
                use_loss_summaries=True,
                config=None,
                params=None,
+               cls_model=None,
                cls_checkpoint=None):
     """Initializes a StarGANEstimator instance.
 
@@ -188,7 +189,7 @@ class StarGANEstimator(tf.estimator.Estimator):
       # eval, metrics, and optimizers (if required).
       return get_estimator_spec(mode, gan_model, loss_fn,
                                 get_eval_metric_ops_fn, generator_optimizer,
-                                discriminator_optimizer, get_hooks_fn, cls_checkpoint)
+                                discriminator_optimizer, get_hooks_fn, cls_model, cls_checkpoint)
 
     super(StarGANEstimator, self).__init__(
         model_fn=_model_fn, model_dir=model_dir, config=config, params=params)
@@ -220,6 +221,7 @@ def get_estimator_spec(mode,
                        generator_optimizer,
                        discriminator_optimizer,
                        get_hooks_fn=None,
+                       cls_model=None,
                        cls_checkpoint=None):
   """Get the EstimatorSpec for the current mode."""
 
@@ -269,7 +271,9 @@ def get_estimator_spec(mode,
       dopt = _maybe_callable(discriminator_optimizer)
       get_hooks_fn = get_hooks_fn or tfgan_train.get_sequential_train_hooks()
       estimator_spec = _get_train_estimator_spec(gan_model, gan_loss, gopt,
-                                                 dopt, get_hooks_fn, cls_checkpoint=cls_checkpoint)
+                                                 dopt, get_hooks_fn,
+                                                 cls_model=cls_model,
+                                                 cls_checkpoint=cls_checkpoint)
 
   return estimator_spec
 
@@ -370,6 +374,7 @@ def _get_train_estimator_spec(gan_model,
                               discriminator_optimizer,
                               get_hooks_fn,
                               train_op_fn=tfgan_train.gan_train_ops,
+                              cls_model=None,
                               cls_checkpoint=None):
   """Return an EstimatorSpec for the train case."""
   scalar_loss = gan_loss.generator_loss + gan_loss.discriminator_loss
@@ -377,7 +382,24 @@ def _get_train_estimator_spec(gan_model,
                           discriminator_optimizer)
   training_hooks = get_hooks_fn(train_ops)
 
-  if cls_checkpoint: # True:
+  if cls_model:
+    var_list = []
+
+    # print([v for v in tf.trainable_variables() if v.name.startswith('Discriminator')])
+    for var in tf.global_variables():  # was trainable_variables()
+      if var.name.startswith('Discriminator/custom_discriminator/'):
+          var_list.append(var)
+
+    pretrain_saver = tf.train.Saver(var_list)
+
+    def init_fn(_scaffold, session):
+      pretrain_saver.restore(session, cls_model + '/keras/keras_model.ckpt')
+                             # '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09_875886/converted_discriminator/keras/keras_model.ckpt')
+
+
+    scaffold = tf.train.Scaffold(init_fn=init_fn)
+
+  elif cls_checkpoint: # True:
     # Load pre-trained parameters here
     var_list = []
 
@@ -391,16 +413,11 @@ def _get_train_estimator_spec(gan_model,
     pretrain_saver = tf.train.Saver(var_list)
 
     def init_fn(_scaffold, session):
-      pretrain_saver.restore(session,
-                             '/tmp/temp_checkpoint/keras/keras_model.ckpt')
+      pretrain_saver.restore(session, cls_checkpoint)
+                             # '/tmp/temp_checkpoint/keras/keras_model.ckpt')
 
                              # '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/model.ckpt-130000')
                              # '/home/ec2-user/gan_checkpoints/tfgan_logdir_glr2m5_gd1_ab09/stargan_estimator/out/checkpoints/model.ckpt-130000')
-
-    # def init_fn(_scaffold, _session):
-    #     tf.compat.v1.train.init_from_checkpoint(
-    #         '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/model.ckpt-130000',
-    #         {'Discriminator/discriminator/': 'Discriminator/discriminator/'})
 
     scaffold = tf.train.Scaffold(init_fn=init_fn)
   else:

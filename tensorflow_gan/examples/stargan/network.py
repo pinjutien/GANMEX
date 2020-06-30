@@ -123,7 +123,6 @@ class CustomKerasDiscriminator:
     for rem in variables_to_remove:
       trainable_collection.remove(rem)
 
-    print()
 
   def __call__(self, input_net, class_num):
     with tf.compat.v1.variable_scope('discriminator'):
@@ -186,7 +185,7 @@ def custom_keras_discriminator(model_path):
 
 
 def custom_tf_discriminator(shared_embedding=False):
-  if shared_embedding:
+  if not shared_embedding:
     def _custom_discriminator(input_net, class_num):
       with tf.compat.v1.variable_scope('discriminator'):
         hidden_src = layers.discriminator_input_hidden(input_net, scope='discriminator_input_hidden_source')
@@ -197,7 +196,7 @@ def custom_tf_discriminator(shared_embedding=False):
         hidden_cls = layers.discriminator_input_hidden(input_net, trainable=False)
         output_cls = layers.discriminator_output_class(hidden_cls, class_num, trainable=False)
 
-      return output_src, output_cls
+      return output_src, output_cls # / 10.0
     return _custom_discriminator
 
   else:

@@ -29,8 +29,9 @@ flags.DEFINE_integer('batch_size', 6, 'The number of images in each batch.')
 flags.DEFINE_integer('patch_size', 256, 'The patch size of images.')
 
 # Write-to-disk flags.
-flags.DEFINE_string('output_dir', '/tmp/tfgan_logdir_share0/stargan_estimator/out/',
-                    # '/tmp/tfgan_logdir_glr2m5_gd1_ab09_875886_T100/stargan_estimator/out/',
+flags.DEFINE_string('output_dir',
+                    '/tmp/tfgan_logdir_875886_temp/stargan_estimator/out/',
+                    # '/tmp/tfgan_logdir_share1_b/stargan_estimator/out/',
                     'Directory where to write summary image.')
 flags.DEFINE_string('tfdata_source', 'cycle_gan',
                     'load tf dataset. default=celeb_a')
@@ -38,11 +39,16 @@ flags.DEFINE_string('tfdata_source_domains', 'Black_Hair,Blond_Hair,Brown_Hair',
                     'celeb_a domain: default=Black_Hair,Blond_Hair,Brown_Hair')
 flags.DEFINE_string('download', "True", "download data from tensorflow_datasets")
 flags.DEFINE_string('data_dir', None, "directly load data from data_dir")
-flags.DEFINE_string('cls_model', None,
+flags.DEFINE_string('cls_model',
+                    # None,
                     # '/home/ec2-user/gan/test_model/model-032-0.875886.h5',
-                    # "/home/ec2-user/apple2orange.h5", #'/Users/shengms/Code/gan_checkpoints/apple2orange.h5',  #
+                    # '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09_875886/model-032-0.875886.h5',
+                    '/Users/shengms/Code/gan/tensorflow_gan/examples/classification/test_model/test_a2o/',
                     "load classification model in discriminator of stargan")
-flags.DEFINE_string('cls_checkpoint', None, "checkpoint file path for the class discriminator")
+flags.DEFINE_string('cls_checkpoint',
+                    None,
+                    # '/home/ec2-user/gan_checkpoints/tfgan_logdir_glr2m5_gd1_ab09/stargan_estimator/out/checkpoints/model.ckpt-130000',
+                    "checkpoint file path for the class discriminator")
 
 # FLAGS for training hyper-parameters.
 flags.DEFINE_float('generator_lr', 2e-5, 'The generator learning rate. Default = 1e-4 Current Best = 2e-5')
