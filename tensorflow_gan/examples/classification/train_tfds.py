@@ -3,18 +3,14 @@
 
 import argparse
 import os
+import math
 import numpy as np
 import importlib
 import pandas as pd 
 import tensorflow as tf
 
 import tensorflow_datasets as tfds
-import tensorflow.keras as keras
-# import keras
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
-# from keras.preprocessing.image import ImageDataGenerator, load_img
+
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Flatten, Activation
@@ -33,7 +29,7 @@ IMAGE_WIDTH=256
 IMAGE_HEIGHT=256
 IMAGE_SIZE=(IMAGE_WIDTH, IMAGE_HEIGHT)
 IMAGE_CHANNELS=3
-DATASET = 'cycle_gan'
+DATASET_NAME = 'cycle_gan'
 
 
 def get_optimizer(args):
@@ -48,7 +44,7 @@ def main(args):
     batch_size=32
     os.makedirs(args.output_path, exist_ok=False)
 
-    train_generator, val_generator, train_size, val_size = get_generators_from_tfds(DATASET, IMAGE_SIZE, 32, test_run=test_run)
+    train_generator, val_generator, train_size, val_size = get_generators_from_tfds(DATASET_NAME, IMAGE_SIZE, 32, test_run=test_run)
 
     # load model without classifier layers
     pre_model = VGG16(weights='imagenet', include_top=False, input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS))
@@ -71,14 +67,6 @@ def main(args):
                   metrics=['accuracy'])
 
     model.save(args.output_path + "base_model.h5".format(model_name=args.model_name))
-
-    for layer in model.layers:
-        # things will break if the input_1 and the activation layers get renamed
-        if not layer.name.startswith('input') and not layer.name.startswith('activation'):
-            layer._name = 'Discriminator/custom_discriminator/' + layer.name
-
-    print("Model summary:")
-    model.summary()
 
     earlystop = EarlyStopping(patience=10)
     learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc',
@@ -107,18 +95,35 @@ def main(args):
     model.save_weights(args.output_path + "{model_name}_weights.h5".format(model_name=args.model_name))
     model.save(args.output_path + "{model_name}_keras.h5".format(model_name=args.model_name))
 
+    # Renaming the layer names will mess up the keras model, so need to do it after the keras models are saved
+    for layer in model.layers:
+        # things will break if the input_1 and the activation layers get renamed
+        if not layer.name.startswith('input') and not layer.name.startswith('activation'):
+            layer._name = 'Discriminator/custom_discriminator/' + layer.name
+
+    print("Estimator model summary:")
+    model.summary()
+
     tf.keras.estimator.model_to_estimator(keras_model=model, model_dir=args.output_path)
 
+    test(args, model)
 
-# # For spot-checking prediction numbers
-# keras_model = tf.keras.models.Model(inputs=model.input, outputs=model.layers[-2].output)
-# import tensorflow_datasets as tfds
-# ds = tfds.load('cycle_gan')
-# examples_apples = list(tfds.as_numpy(ds['testA'].take(10)))
-# import numpy as np
-# inputs_apples = np.array([x['image'] for x in examples_apples]) / 255.0
-# print(keras_model.predict(inputs_apples))
 
+def test(args, model):
+    # for spot check
+    # keras_model = tf.keras.models.Model(inputs=model.input, outputs=model.layers[-2].output)
+
+    ds = tfds.load(DATASET_NAME)
+    examples_a = list(tfds.as_numpy(ds['testA'].take(10)))
+    examples_b = list(tfds.as_numpy(ds['testB'].take(10)))
+    inputs_a = np.array([x['image'] for x in examples_a]) / 255.0
+    inputs_b = np.array([x['image'] for x in examples_b]) / 255.0
+    preds_a = model.predict(inputs_a)
+    preds_b = model.predict(inputs_b)
+    accuracy = np.mean([int(x[0] > x[1]) for x in preds_a] + [int(x[1] > x[0]) for x in preds_b])
+    cross_entropy = np.mean([-math.log(x[0]) for x in preds_a] + [-math.log(x[1]) for x in preds_b])
+    print('Accuracy:', accuracy)
+    print('Cross Entropy Loss:', cross_entropy)
 
 if __name__ == '__main__':
 
@@ -141,7 +146,7 @@ if __name__ == '__main__':
     if test_run:
         test_args = [
             "--optimizer", "Adam",
-            "--output_folder", "test_a2o_2/",
+            "--output_folder", "test_a2o_6/",
         ]
         args = parser.parse_args(test_args)
         print('Using the default test argument:')
