@@ -123,7 +123,6 @@ class CustomKerasDiscriminator:
     for rem in variables_to_remove:
       trainable_collection.remove(rem)
 
-
   def __call__(self, input_net, class_num):
     with tf.compat.v1.variable_scope('discriminator'):
       hidden_src = layers.discriminator_input_hidden(input_net, scope='discriminator_input_hidden_source')
@@ -131,58 +130,9 @@ class CustomKerasDiscriminator:
       output_src = tf.compat.v1.layers.flatten(output_src)
       output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
 
-    # with tf.compat.v1.variable_scope('custom_discriminator'):
-    # with tf.compat.v1.variable_scope('custom_discriminator'):
-    #   if self.keras_model is None:
-    #     model = tf.keras.models.load_model(self.model_path)
-    #     self.keras_model = tf.keras.models.Model(inputs=model.input, outputs=model.layers[-2].output)
-    #     self.keras_model.trainable = False
-
-        # freeze parameters from the custom discriminator
-        # trainable_collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
-        # variables_to_remove = list()
-        # for var in trainable_collection:
-        #   if var.name.startswith('Discriminator/custom_discriminator/'):
-        #     variables_to_remove.append(var)
-        # for rem in variables_to_remove:
-        #   trainable_collection.remove(rem)
-
     output_cls = self.keras_model((input_net + 1.0) / 2.0)
-    # output_cls = self.keras_model(input_net)
 
     return output_src, output_cls
-
-
-def custom_keras_discriminator(model_path):
-  def _custom_discriminator(input_net, class_num):
-    with tf.compat.v1.variable_scope('discriminator'):
-      hidden_src = layers.discriminator_input_hidden(input_net, scope='discriminator_input_hidden_source')
-      output_src = layers.discriminator_output_source(hidden_src)
-      output_src = tf.compat.v1.layers.flatten(output_src)
-      output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
-
-      model = tf.keras.models.load_model(model_path)
-      fModel = tf.keras.models.Model(inputs=model.input, outputs=model.layers[-2].output)
-      fModel.trainable = False
-      output_cls = fModel((input_net + 1.0) / 2.0)
-
-    # # freeze parameters from the custom discriminator
-    # trainable_collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
-    # variables_to_remove = list()
-    # for var in trainable_collection:
-    #   # uses the attribute 'name' of the variable
-    #   if var.name.startswith('Discriminator/block') or var.name.startswith('Discriminator/dense'):
-    #     variables_to_remove.append(var)
-    # for rem in variables_to_remove:
-    #   trainable_collection.remove(rem)
-
-      # flat1 = Flatten()(input_net)
-      # dense_layer = Dense(2, activation=None)
-      # output_cls = dense_layer(flat1)
-
-    return output_src, output_cls #/ 100.0
-  return _custom_discriminator
-
 
 def custom_tf_discriminator(shared_embedding=False):
   if not shared_embedding:
@@ -196,7 +146,7 @@ def custom_tf_discriminator(shared_embedding=False):
         hidden_cls = layers.discriminator_input_hidden(input_net, trainable=False)
         output_cls = layers.discriminator_output_class(hidden_cls, class_num, trainable=False)
 
-      return output_src, output_cls # / 10.0
+      return output_src, output_cls
     return _custom_discriminator
 
   else:

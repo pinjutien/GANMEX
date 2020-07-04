@@ -275,7 +275,6 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
 
     # tf.keras.estimator.model_to_estimator(keras_model_path=hparams.cls_model, model_dir='/tmp/temp_checkpoint/')
 
-
   elif hparams.cls_checkpoint:
     network_discriminator = network.custom_tf_discriminator()
   else:
