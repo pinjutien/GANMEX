@@ -35,7 +35,7 @@ HParams = collections.namedtuple('HParams', [
     'batch_size', 'patch_size', 'output_dir', 'generator_lr',
     'discriminator_lr', 'max_number_of_steps', 'steps_per_eval', 'adam_beta1',
     'adam_beta2', 'gen_disc_step_ratio', 'master', 'ps_tasks', 'task', 'tfdata_source', 'tfdata_source_domains',
-    'download', 'data_dir', 'cls_model', 'save_checkpoints_steps', 'keep_checkpoint_max',
+    'download', 'data_dir', 'cls_model', 'cls_checkpoint', 'save_checkpoints_steps', 'keep_checkpoint_max',
     'reconstruction_loss_weight', 'classification_loss_weight'])
 
 
@@ -264,12 +264,22 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
                                     hparams.adam_beta1, hparams.adam_beta2)
 
   # Create estimator.
-  # cls_model = "/Users/pin-jutien/tfds-download/models_ckpts/classification/a2o/apple2orange.h5"
+  if hparams.cls_model and hparams.cls_checkpoint:
+    raise Exception('Can only assign one parameter between hparams.cls_model and hparams.cls_checkpoint')
+
   if hparams.cls_model:
-    print("[!!!!] LOAD customed classification model in discrimantor.")
-    network_discriminator = network.custom_discriminator(hparams.cls_model)
+    print("[!!!!] LOAD custom classification model in discriminator.")
+
+    network_discriminator = network.CustomKerasDiscriminator(hparams.cls_model + '/base_model.h5')
+    # network_discriminator = network.custom_keras_discriminator(hparams.cls_model)
+
+    # tf.keras.estimator.model_to_estimator(keras_model_path=hparams.cls_model, model_dir='/tmp/temp_checkpoint/')
+
+  elif hparams.cls_checkpoint:
+    network_discriminator = network.custom_tf_discriminator()
   else:
     network_discriminator = network.discriminator
+
   stargan_estimator = tfgan.estimator.StarGANEstimator(
       model_dir= hparams.output_dir + "checkpoints/",
       generator_fn=override_generator_fn or network.generator,
@@ -283,7 +293,9 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
           _define_train_step(hparams.gen_disc_step_ratio)),
       add_summaries=tfgan.estimator.SummaryType.IMAGES,
       config=tf.estimator.RunConfig(save_checkpoints_steps=hparams.save_checkpoints_steps,
-                                    keep_checkpoint_max=hparams.keep_checkpoint_max)
+                                    keep_checkpoint_max=hparams.keep_checkpoint_max),
+      cls_model=hparams.cls_model,
+      cls_checkpoint=hparams.cls_checkpoint
   )
 
   # Get input function for training and test images.

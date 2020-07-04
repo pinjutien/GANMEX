@@ -71,10 +71,14 @@ def get_generators_from_df_path(df, data_path, target_size, batch_size):
 
     return train_generator, val_generator, train_size, val_size
 
-def get_generators_from_tfds(dataset_name, target_size, batch_size, num_classes=2):
+def get_generators_from_tfds(dataset_name, target_size, batch_size, num_classes=2, test_run=False):
     ds = tfds.load('cycle_gan')
     raw_train = list(tfds.as_numpy(ds['trainA'])) + list(tfds.as_numpy(ds['trainB']))
     raw_train, raw_val = train_test_split(raw_train, test_size=0.20, random_state=42)
+    if test_run:
+        raw_train = raw_train[:batch_size]
+        raw_val = raw_val[:batch_size]
+
     train_size = len(raw_train)
     val_size = len(raw_val)
 

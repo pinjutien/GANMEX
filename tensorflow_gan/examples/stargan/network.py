@@ -32,6 +32,8 @@ import tensorflow as tf
 from tensorflow_gan.examples.stargan import layers
 from tensorflow_gan.examples.stargan import ops
 
+from tensorflow.keras.layers import Activation, Dense, Flatten
+
 
 def generator(inputs, targets):
   """Generator module.
@@ -100,13 +102,63 @@ def discriminator(input_net, class_num):
 
   return output_src, output_cls
 
-def custom_discriminator(model_path):
-  def _custom_discriminator(input_net, class_num):
-    # model_path = "/Users/pin-jutien/tfds-download/models_ckpts/classification/a2o/apple2orange.h5"
-    model= tf.keras.models.load_model(model_path)
-    fModel = tf.keras.models.Model(inputs=model.input, outputs = model.output)
-    fModel.trainable = False
-    output_cls = fModel(input_net)
-    output_src, _ = discriminator(input_net, class_num)
+
+class CustomKerasDiscriminator:
+  def __init__(self, model_path):
+    # self.keras_model = None
+    self.model_path = model_path
+
+  def initialize_network(self):
+    with tf.compat.v1.variable_scope('custom_discriminator'):
+      model = tf.keras.models.load_model(self.model_path)
+      self.keras_model = tf.keras.models.Model(inputs=model.input, outputs=model.layers[-2].output)
+      self.keras_model.trainable = False
+
+    # freeze parameters from the custom discriminator
+    trainable_collection = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
+    variables_to_remove = list()
+    for var in trainable_collection:
+      if var.name.startswith('Discriminator/custom_discriminator/'):
+        variables_to_remove.append(var)
+    for rem in variables_to_remove:
+      trainable_collection.remove(rem)
+
+  def __call__(self, input_net, class_num):
+    with tf.compat.v1.variable_scope('discriminator'):
+      hidden_src = layers.discriminator_input_hidden(input_net, scope='discriminator_input_hidden_source')
+      output_src = layers.discriminator_output_source(hidden_src)
+      output_src = tf.compat.v1.layers.flatten(output_src)
+      output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
+
+    output_cls = self.keras_model((input_net + 1.0) / 2.0)
+
     return output_src, output_cls
-  return _custom_discriminator
+
+def custom_tf_discriminator(shared_embedding=False):
+  if not shared_embedding:
+    def _custom_discriminator(input_net, class_num):
+      with tf.compat.v1.variable_scope('discriminator'):
+        hidden_src = layers.discriminator_input_hidden(input_net, scope='discriminator_input_hidden_source')
+        output_src = layers.discriminator_output_source(hidden_src)
+        output_src = tf.compat.v1.layers.flatten(output_src)
+        output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
+
+        hidden_cls = layers.discriminator_input_hidden(input_net, trainable=False)
+        output_cls = layers.discriminator_output_class(hidden_cls, class_num, trainable=False)
+
+      return output_src, output_cls
+    return _custom_discriminator
+
+  else:
+    def _custom_discriminator(input_net, class_num):
+      with tf.compat.v1.variable_scope('discriminator'):
+        hidden = layers.discriminator_input_hidden(input_net, trainable=False)
+
+        output_src = layers.discriminator_output_source(hidden)
+        output_src = tf.compat.v1.layers.flatten(output_src)
+        output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
+
+        output_cls = layers.discriminator_output_class(hidden, class_num, trainable=False)
+
+      return output_src, output_cls
+    return _custom_discriminator

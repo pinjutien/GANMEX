@@ -29,7 +29,9 @@ flags.DEFINE_integer('batch_size', 6, 'The number of images in each batch.')
 flags.DEFINE_integer('patch_size', 256, 'The patch size of images.')
 
 # Write-to-disk flags.
-flags.DEFINE_string('output_dir', '/tmp/tfgan_logdir/stargan_estimator/out/',
+flags.DEFINE_string('output_dir',
+                    '/tmp/tfgan_logdir_875886_temp/stargan_estimator/out/',
+                    # '/tmp/tfgan_logdir_share1_b/stargan_estimator/out/',
                     'Directory where to write summary image.')
 flags.DEFINE_string('tfdata_source', 'cycle_gan',
                     'load tf dataset. default=celeb_a')
@@ -37,19 +39,28 @@ flags.DEFINE_string('tfdata_source_domains', 'Black_Hair,Blond_Hair,Brown_Hair',
                     'celeb_a domain: default=Black_Hair,Blond_Hair,Brown_Hair')
 flags.DEFINE_string('download', "True", "download data from tensorflow_datasets")
 flags.DEFINE_string('data_dir', None, "directly load data from data_dir")
-flags.DEFINE_string('cls_model', None, "load classification model in discrimnator of stargan")
+flags.DEFINE_string('cls_model',
+                    # None,
+                    # '/home/ec2-user/gan/test_model/model-032-0.875886.h5',
+                    # '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09_875886/model-032-0.875886.h5',
+                    '/Users/shengms/Code/gan/tensorflow_gan/examples/classification/test_model/test_a2o/',
+                    "load classification model in discriminator of stargan")
+flags.DEFINE_string('cls_checkpoint',
+                    None,
+                    # '/home/ec2-user/gan_checkpoints/tfgan_logdir_glr2m5_gd1_ab09/stargan_estimator/out/checkpoints/model.ckpt-130000',
+                    "checkpoint file path for the class discriminator")
 
 # FLAGS for training hyper-parameters.
-flags.DEFINE_float('generator_lr', 2e-5, 'The generator learning rate. Default = 1e-4')
+flags.DEFINE_float('generator_lr', 2e-5, 'The generator learning rate. Default = 1e-4 Current Best = 2e-5')
 flags.DEFINE_float('discriminator_lr', 1e-4, 'The discriminator learning rate. Default = 1e-4')
 flags.DEFINE_integer('max_number_of_steps', 1000000,
                      'The maximum number of gradient steps.')
 flags.DEFINE_integer('steps_per_eval', 2000,
                      'The number of steps after which we write eval to disk.')
-flags.DEFINE_float('adam_beta1', 0.5, 'Adam Beta 1 for the Adam optimizer.')
+flags.DEFINE_float('adam_beta1', 0.9, 'Adam Beta 1 for the Adam optimizer. Default = 0.5 Current Best = 0.9')
 flags.DEFINE_float('adam_beta2', 0.999, 'Adam Beta 2 for the Adam optimizer.')
 flags.DEFINE_float('gen_disc_step_ratio', 1.0,
-                   'Generator:Discriminator training step ratio. Default = 0.2')
+                   'Generator:Discriminator training step ratio. Default = 0.2 Current Best = 1.0')
 flags.DEFINE_integer('save_checkpoints_steps', 2000,
                      'Save checkpoint every n step.')
 flags.DEFINE_integer('keep_checkpoint_max', 250, 'Max number of checkpoints to keep.')
@@ -79,7 +90,7 @@ def main(_):
                               FLAGS.adam_beta2, FLAGS.gen_disc_step_ratio,
                               FLAGS.master, FLAGS.ps_tasks, FLAGS.task,
                               FLAGS.tfdata_source, FLAGS.tfdata_source_domains,
-                              FLAGS.download, FLAGS.data_dir, FLAGS.cls_model,
+                              FLAGS.download, FLAGS.data_dir, FLAGS.cls_model, FLAGS.cls_checkpoint,
                               FLAGS.save_checkpoints_steps, FLAGS.keep_checkpoint_max,
                               FLAGS.reconstruction_loss_weight, FLAGS.classification_loss_weight)
   train_lib.train(hparams)
