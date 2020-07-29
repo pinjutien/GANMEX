@@ -36,7 +36,7 @@ HParams = collections.namedtuple('HParams', [
     'discriminator_lr', 'max_number_of_steps', 'steps_per_eval', 'adam_beta1',
     'adam_beta2', 'gen_disc_step_ratio', 'master', 'ps_tasks', 'task', 'tfdata_source', 'tfdata_source_domains',
     'download', 'data_dir', 'cls_model', 'cls_checkpoint', 'save_checkpoints_steps', 'keep_checkpoint_max',
-    'reconstruction_loss_weight', 'classification_loss_weight'])
+    'reconstruction_loss_weight', 'self_consistency_loss_weight', 'classification_loss_weight'])
 
 
 def _get_optimizer(gen_lr, dis_lr, beta1, beta2):
@@ -123,6 +123,8 @@ def _get_stargan_loss(
     gradient_penalty_one_sided=False,
     reconstruction_loss_fn=tf.compat.v1.losses.absolute_difference,
     reconstruction_loss_weight=10.0,
+    self_consistency_loss_fn=tf.compat.v1.losses.absolute_difference,
+    self_consistency_loss_weight=0.0,
     classification_loss_fn=tf.compat.v1.losses.softmax_cross_entropy,
     classification_loss_weight=1.0,
     classification_one_hot=True,
@@ -215,12 +217,19 @@ def _get_stargan_loss(
             one_sided=gradient_penalty_one_sided,
             add_summaries=add_summaries) * gradient_penalty_weight
 
+      # Self-consistency Loss.
+      if self_consistency_loss_weight >= 0.0:
+          self_consistency_loss = self_consistency_loss_fn(model.input_data, model.generated_data)
+          generator_loss += self_consistency_loss * self_consistency_loss_weight
+          if add_summaries:
+              tf.compat.v1.summary.scalar('self_consistency_loss', self_consistency_loss)
+
       # Reconstruction Loss.
-      reconstruction_loss = reconstruction_loss_fn(model.input_data,
-                                                   model.reconstructed_data)
-      generator_loss += reconstruction_loss * reconstruction_loss_weight
-      if add_summaries:
-        tf.compat.v1.summary.scalar('reconstruction_loss', reconstruction_loss)
+      if reconstruction_loss_weight >= 0.0:
+          reconstruction_loss = reconstruction_loss_fn(model.input_data, model.reconstructed_data)
+          generator_loss += reconstruction_loss * reconstruction_loss_weight
+          if add_summaries:
+            tf.compat.v1.summary.scalar('reconstruction_loss', reconstruction_loss)
 
       # Classification Loss.
       generator_loss += _classification_loss_helper(
@@ -286,6 +295,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
       discriminator_fn=override_discriminator_fn or network_discriminator,
       # loss_fn=tfgan.stargan_loss,
       loss_fn=_get_stargan_loss(reconstruction_loss_weight=hparams.reconstruction_loss_weight,
+                                self_consistency_loss_weight=hparams.self_consistency_loss_weight,
                                 classification_loss_weight=hparams.classification_loss_weight),
       generator_optimizer=gen_opt,
       discriminator_optimizer=dis_opt,

@@ -3,7 +3,7 @@
 
 import os
 import numpy as np
-import pandas as pd 
+import pandas as pd
 import tensorflow as tf
 import tensorflow_datasets as tfds
 # import tensorflow.keras as keras
@@ -14,8 +14,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
 # from keras.preprocessing.image import ImageDataGenerator, load_img
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import Flatten
+from tensorflow.keras.layers import Activation, Dense, Flatten
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
 # from keras.applications import VGG16
@@ -23,16 +22,16 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCh
 # from keras.layers import Dense
 # from keras.layers import Flatten
 
-use_cpu = True
+use_cpu = False
 if (use_cpu):
     print("Use CPU only")
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-data_path = '/Users/ptien/tfds-download/horse2zebra/'
+data_path = '/home/ec2-user/apple2orange/'
 ckpt_path = "./test_model/"
-model_name = "horse2zebra"
-epochs=5
+model_name = "apple2orange"
+epochs=100
 batch_size=32
 os.makedirs(ckpt_path, exist_ok=True)
 
@@ -40,8 +39,8 @@ def get_data(data_path):
     filenames = []
     categories = []
     label_map = {
-        'trainA': 'horse',
-        'trainB': 'zebra',
+        'trainA': 'apple',
+        'trainB': 'orange',
     }
     for folder in os.listdir(data_path):
         if folder in label_map.keys():
@@ -85,8 +84,8 @@ train_datagen = ImageDataGenerator(
 validation_datagen = ImageDataGenerator(rescale=1./255)
 
 train_generator = train_datagen.flow_from_dataframe(
-    train_df, 
-    data_path, 
+    train_df,
+    data_path,
     x_col='filename',
     y_col='category',
     target_size=IMAGE_SIZE,
@@ -95,8 +94,8 @@ train_generator = train_datagen.flow_from_dataframe(
 )
 
 validation_generator = validation_datagen.flow_from_dataframe(
-    validate_df, 
-    data_path, 
+    validate_df,
+    data_path,
     x_col='filename',
     y_col='category',
     target_size=IMAGE_SIZE,
@@ -109,7 +108,9 @@ pre_model = VGG16(weights='imagenet', include_top=False, input_shape=(IMAGE_WIDT
 # add new classifier layers
 flat1 = Flatten()(pre_model.output)
 class1 = Dense(1024, activation='relu')(flat1)
-output = Dense(2, activation='softmax')(class1)
+# output = Dense(2, activation='softmax')(class1)
+output = Dense(2, activation=None)(class1)
+output = Activation('softmax')(output)
 
 # define new model
 model = Model(inputs=pre_model.input, outputs=output)
@@ -135,7 +136,7 @@ mdlckpt = ModelCheckpoint(ckpt_path + 'model-{epoch:03d}-{val_acc:03f}.h5', save
 callbacks = [earlystop, learning_rate_reduction, mdlckpt]
 
 history = model.fit_generator(
-    train_generator, 
+    train_generator,
     epochs=epochs,
     validation_data=validation_generator,
     validation_steps=max(150, total_validate//batch_size),

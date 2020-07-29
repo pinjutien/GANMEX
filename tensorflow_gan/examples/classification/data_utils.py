@@ -29,6 +29,7 @@ def get_tfds_df_path(data_path):
     })
     return table, data_path
 
+
 def get_generators_from_df_path(df, data_path, target_size, batch_size):
     train_df, val_df = train_test_split(df, test_size=0.20, random_state=42)
     train_df = train_df.reset_index(drop=True)
@@ -71,23 +72,22 @@ def get_generators_from_df_path(df, data_path, target_size, batch_size):
 
     return train_generator, val_generator, train_size, val_size
 
-def get_generators_from_tfds(dataset_name, target_size, batch_size, num_classes=2, test_run=False):
-    ds = tfds.load('cycle_gan')
+
+def get_generators_from_tfds(dataset_name, batch_size, num_classes=2, test_run=False, train_val_split=True):
+    ds = tfds.load(dataset_name)
     raw_train = list(tfds.as_numpy(ds['trainA'])) + list(tfds.as_numpy(ds['trainB']))
-    raw_train, raw_val = train_test_split(raw_train, test_size=0.20, random_state=42)
+
+    if train_val_split:
+        raw_train, raw_val = train_test_split(raw_train, test_size=0.20, random_state=42)
+
     if test_run:
         raw_train = raw_train[:batch_size]
-        raw_val = raw_val[:batch_size]
 
     train_size = len(raw_train)
-    val_size = len(raw_val)
 
     x_train = np.array([a['image'] for a in raw_train])
     y_train = np.array([a['label'] for a in raw_train])
-    x_val = np.array([a['image'] for a in raw_val])
-    y_val = np.array([a['label'] for a in raw_val])
     y_train = np_utils.to_categorical(y_train, num_classes)
-    y_val = np_utils.to_categorical(y_val, num_classes)
 
     train_datagen = ImageDataGenerator(
         rotation_range=15,
@@ -100,10 +100,23 @@ def get_generators_from_tfds(dataset_name, target_size, batch_size, num_classes=
     )
     train_generator = train_datagen.flow(x_train, y_train, batch_size=32)
 
-    val_datagen = ImageDataGenerator(rescale=1. / 255)
-    val_generator = val_datagen.flow(x_val, y_val, batch_size=32)
+    if train_val_split:
+        if test_run:
+            raw_val = raw_val[:batch_size]
 
-    return train_generator, val_generator, train_size, val_size
+        val_size = len(raw_val)
+
+        x_val = np.array([a['image'] for a in raw_val])
+        y_val = np.array([a['label'] for a in raw_val])
+        y_val = np_utils.to_categorical(y_val, num_classes)
+
+        val_datagen = ImageDataGenerator(rescale=1. / 255)
+        val_generator = val_datagen.flow(x_val, y_val, batch_size=32)
+
+        return train_generator, val_generator, train_size, val_size
+    else:
+        return train_generator, train_size
+
 
 def get_generators_from_cifar10(batch_size):
     num_classes = 10

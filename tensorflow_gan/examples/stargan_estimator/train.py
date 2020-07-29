@@ -26,12 +26,16 @@ from tensorflow_gan.examples.stargan_estimator import train_lib
 
 # FLAGS for data.
 flags.DEFINE_integer('batch_size', 6, 'The number of images in each batch.')
-flags.DEFINE_integer('patch_size', 256, 'The patch size of images.')
+flags.DEFINE_integer('patch_size', 128, 'The patch size of images.')
+
+## Next cw100 scl100
+
 
 # Write-to-disk flags.
 flags.DEFINE_string('output_dir',
-                    '/tmp/tfgan_logdir_875886_temp/stargan_estimator/out/',
-                    # '/tmp/tfgan_logdir_share1_b/stargan_estimator/out/',
+                    # '/tmp/tfgan_logdir_keras_rmsp_v1_cw1_scl1000_hack/stargan_estimator/out/',
+                    '/tmp/tfgan_logdir_share0_scl1000_hack/stargan_estimator/out/',
+                    # '/tmp/tfgan_logdir_p128_hack1/stargan_estimator/out/',
                     'Directory where to write summary image.')
 flags.DEFINE_string('tfdata_source', 'cycle_gan',
                     'load tf dataset. default=celeb_a')
@@ -40,14 +44,13 @@ flags.DEFINE_string('tfdata_source_domains', 'Black_Hair,Blond_Hair,Brown_Hair',
 flags.DEFINE_string('download', "True", "download data from tensorflow_datasets")
 flags.DEFINE_string('data_dir', None, "directly load data from data_dir")
 flags.DEFINE_string('cls_model',
-                    # None,
-                    # '/home/ec2-user/gan/test_model/model-032-0.875886.h5',
-                    # '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09_875886/model-032-0.875886.h5',
-                    '/Users/shengms/Code/gan/tensorflow_gan/examples/classification/test_model/test_a2o/',
+                    None,
+                    # '/home/ec2-user/gan/test_model/rmsp_std_conv1_gmp_ds1024_dbn/',
+                    # '/Users/shengms/Code/gan/tensorflow_gan/examples/classification/test_model/test_a2o/',
                     "load classification model in discriminator of stargan")
 flags.DEFINE_string('cls_checkpoint',
-                    None,
-                    # '/home/ec2-user/gan_checkpoints/tfgan_logdir_glr2m5_gd1_ab09/stargan_estimator/out/checkpoints/model.ckpt-130000',
+                    # None,
+                    '/home/ec2-user/gan_checkpoints/tfgan_logdir_glr2m5_gd1_ab09/stargan_estimator/out/checkpoints/model.ckpt-130000',
                     "checkpoint file path for the class discriminator")
 
 # FLAGS for training hyper-parameters.
@@ -64,7 +67,9 @@ flags.DEFINE_float('gen_disc_step_ratio', 1.0,
 flags.DEFINE_integer('save_checkpoints_steps', 2000,
                      'Save checkpoint every n step.')
 flags.DEFINE_integer('keep_checkpoint_max', 250, 'Max number of checkpoints to keep.')
+
 flags.DEFINE_float('reconstruction_loss_weight', 10.0, 'Default = 10.0')
+flags.DEFINE_float('self_consistency_loss_weight', 1000.0, 'Put in 0.0 if not in use. Current Best = 1000.0')
 flags.DEFINE_float('classification_loss_weight', 1.0, 'Default = 1.0')
 
 
@@ -92,7 +97,9 @@ def main(_):
                               FLAGS.tfdata_source, FLAGS.tfdata_source_domains,
                               FLAGS.download, FLAGS.data_dir, FLAGS.cls_model, FLAGS.cls_checkpoint,
                               FLAGS.save_checkpoints_steps, FLAGS.keep_checkpoint_max,
-                              FLAGS.reconstruction_loss_weight, FLAGS.classification_loss_weight)
+                              FLAGS.reconstruction_loss_weight,
+                              FLAGS.self_consistency_loss_weight,
+                              FLAGS.classification_loss_weight)
   train_lib.train(hparams)
 
 

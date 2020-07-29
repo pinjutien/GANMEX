@@ -58,11 +58,11 @@ def generator(inputs, targets):
     input_with_condition = ops.condition_input_with_pixel_padding(
         inputs, targets)
 
-    down_sample = layers.generator_down_sample(input_with_condition)
+    down_sample = layers.generator_down_sample_hack(input_with_condition)
 
-    bottleneck = layers.generator_bottleneck(down_sample)
+    bottleneck = layers.generator_bottleneck_hack(down_sample)
 
-    up_sample = layers.generator_up_sample(bottleneck, inputs.shape[-1])
+    up_sample = layers.generator_up_sample_hack(bottleneck, inputs.shape[-1])
 
   return up_sample
 

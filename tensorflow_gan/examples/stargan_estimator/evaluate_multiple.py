@@ -15,7 +15,7 @@ import tensorflow_gan as tfgan
 from glob import glob
 from tensorflow_gan.examples.stargan import network
 from tensorflow_gan.examples.cyclegan import data_provider as cyclegan_dp
-from tensorflow_gan.examples.cyclegan.data_provider import load_data_from
+# from tensorflow_gan.examples.cyclegan.data_provider import load_data_from
 
 
 def translate_images(estimator, test_images_list, label, checkpoint_path, num_domains):
@@ -76,10 +76,15 @@ def make_summary_images(checkpoint_dir, checkpoint_struct, dataset_name, num_exa
     input_oranges = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], 256)).astype('float32') for x in
                      examples_oranges]
 
+    discriminator_fn = network.discriminator
+    # discriminator_fn = network.custom_tf_discriminator()
+    # discriminator_fn = network.CustomKerasDiscriminator('/home/ec2-user/gan/test_model/a2o_rmsp/base_model.h5')
+    # discriminator_fn = network.CustomKerasDiscriminator('/home/ec2-user/gan/test_model/rmsp_std_conv1_gmp_ds1024_dbn/base_model.h5')
+
     stargan_estimator = tfgan.estimator.StarGANEstimator(
         model_dir=None,
         generator_fn=network.generator,
-        discriminator_fn=network.discriminator,
+        discriminator_fn=discriminator_fn,
         loss_fn=tfgan.stargan_loss,
         add_summaries=tfgan.estimator.SummaryType.IMAGES
     )
@@ -119,10 +124,16 @@ def make_summary_images(checkpoint_dir, checkpoint_struct, dataset_name, num_exa
 
 
 if __name__ == '__main__':
-    # checkpoint_dir = '/tmp/tfgan_logdir/stargan_estimator/out/checkpoints/'
-    checkpoint_dir = "/Users/pin-jutien/tfds-download/models_ckpts/stargan_est_glr2m5_gd1/"
+    # if len(sys.argv) != 2:
+    #     raise Exception('Please put the checkpoint directory as the only argument.')
+    # checkpoint_dir = sys.argv[1:]
+
+    checkpoint_dir = '/tmp/tfgan_logdir_share0_scl1000_hack/stargan_estimator/out/checkpoints/'
+    # checkpoint_dir = "/Users/pin-jutien/tfds-download/models_ckpts/stargan_est_glr2m5_gd1/"
+    # checkpoint_dir = '/tmp/tfgan_logdir_keras_rmsp_v1_cw10_gd02/stargan_estimator/out/checkpoints/'
+
     if checkpoint_dir[-1] != '/':
         checkpoint_dir += '/'
-    data_dir = "/Users/pin-jutien/tfds-download/apple2orange/"
+    # data_dir = "/Users/pin-jutien/tfds-download/apple2orange/"
     checkpoint_struct = get_checkpoint_struct(checkpoint_dir, increments=[10000])
     make_summary_images(checkpoint_dir, checkpoint_struct, 'cycle_gan', num_examples=10)

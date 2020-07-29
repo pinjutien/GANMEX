@@ -86,14 +86,14 @@ def make_summary_images(checkpoint_dir, checkpoint_file, dataset_name, num_examp
 
 
 if __name__ == '__main__':
-    checkpoint_dir = '/tmp/tfgan_logdir_875886_temp/stargan_estimator/out/checkpoints/'
-    checkpoint_file = 'model.ckpt-0'
+    # checkpoint_dir = '/tmp/tfgan_logdir_875886_temp/stargan_estimator/out/checkpoints/'
+    # checkpoint_file = 'model.ckpt-0'
 
     # checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/'
     # checkpoint_file = 'model.ckpt-130000'
 
-    # checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_share1_b/'
-    # checkpoint_file = 'model.ckpt-20000'
+    checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_keras_v2o_v0/'
+    checkpoint_file = 'model.ckpt-2000'
 
     # checkpoint_dir = '/Users/shengms/Code/gan_checkpoints/stargan_est_875886_temp/'
     # checkpoint_file = 'model.ckpt-100'

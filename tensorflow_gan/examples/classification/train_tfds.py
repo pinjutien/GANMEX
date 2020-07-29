@@ -9,6 +9,9 @@ import importlib
 import pandas as pd 
 import tensorflow as tf
 
+from numpy.random import seed
+from tensorflow import set_random_seed
+
 import tensorflow_datasets as tfds
 
 from tensorflow.keras.applications import VGG16
@@ -34,6 +37,10 @@ DATASET_NAME = 'cycle_gan'
 
 BASE_PATH = './test_model/'
 
+# Set random seed
+seed(1)
+set_random_seed(2)
+
 
 def get_optimizer(args):
     module = importlib.import_module(tf.keras.optimizers)
@@ -43,12 +50,12 @@ def get_optimizer(args):
 
 
 def train(args):
-    epochs = 1 if test_run else 50
+    # epochs = 1 if test_run else 50
     batch_size = 32
     os.makedirs(args.output_path, exist_ok=False)
 
-    train_generator, val_generator, train_size, val_size = get_generators_from_tfds(DATASET_NAME, IMAGE_SIZE, 32,
-                                                                                    test_run=test_run)
+    # train_generator, val_generator, train_size, val_size = get_generators_from_tfds(DATASET_NAME, 32, test_run=test_run)
+    train_generator, train_size = get_generators_from_tfds(DATASET_NAME, 32, test_run=test_run, train_val_split=False)
 
     model = get_model(
         (IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS),
@@ -60,7 +67,7 @@ def train(args):
         conv_dropout=args.conv_dropout,
         dense_batch_normalization=args.dense_batch_normalization,
         dense_dropout=args.dense_dropout,
-        dense_sizes=[int(x) for x in args.dense_sizes.split(',')],
+        dense_sizes=[int(x) for x in args.dense_sizes.split(',') if int(x)],
     )
 
     print("Base model summary:")
@@ -72,29 +79,37 @@ def train(args):
 
     model.save(args.output_path + "base_model.h5")
 
-    earlystop = EarlyStopping(patience=10)
-    learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc',
-                                                patience=2,
-                                                verbose=1,
-                                                factor=0.5,
-                                                min_lr=0.00001)
+    # earlystop = EarlyStopping(patience=10)
+    # learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc',
+    #                                             patience=2,
+    #                                             verbose=1,
+    #                                             factor=0.5,
+    #                                             min_lr=0.00001)
+    #
+    # callbacks = [earlystop, learning_rate_reduction]
 
-    callbacks = [earlystop, learning_rate_reduction]
-
-    if args.save_checkpoints:
-        mdlckpt = ModelCheckpoint(args.output_path + 'model-{epoch:03d}-{val_acc:03f}.h5', save_best_only=True,
-                                  monitor='val_acc', mode='max')
-        callbacks.append(mdlckpt)
+    # if args.save_checkpoints:
+    #     mdlckpt = ModelCheckpoint(args.output_path + 'model-{epoch:03d}-{val_acc:03f}.h5', save_best_only=True,
+    #                               monitor='val_acc', mode='max')
+    #     callbacks.append(mdlckpt)
 
     max_step = 1 if test_run else 150
 
+    # history = model.fit_generator(
+    #     train_generator,
+    #     epochs=epochs,
+    #     validation_data=val_generator,
+    #     validation_steps=val_size // batch_size,  # max(max_step, val_size // batch_size),
+    #     steps_per_epoch=train_size // batch_size,  # max(max_step, train_size // batch_size),
+    #     callbacks=callbacks
+    # )
     history = model.fit_generator(
         train_generator,
-        epochs=epochs,
-        validation_data=val_generator,
-        validation_steps=max(max_step, val_size // batch_size),
-        steps_per_epoch=max(max_step, train_size // batch_size),
-        callbacks=callbacks
+        epochs=args.training_epochs,
+        # validation_data=val_generator,
+        # validation_steps=val_size // batch_size,  # max(max_step, val_size // batch_size),
+        steps_per_epoch=train_size // batch_size,  # max(max_step, train_size // batch_size),
+        # callbacks=callbacks
     )
 
     return model
@@ -120,18 +135,46 @@ def test(args, model):
     # for spot check
     # keras_model = tf.keras.models.Model(inputs=model.input, outputs=model.layers[-2].output)
 
-    ds = tfds.load(DATASET_NAME)
-    examples_a = list(tfds.as_numpy(ds['testA'].take(10)))
-    examples_b = list(tfds.as_numpy(ds['testB'].take(10)))
-    inputs_a = np.array([x['image'] for x in examples_a]) / 255.0
-    inputs_b = np.array([x['image'] for x in examples_b]) / 255.0
-    preds_a = model.predict(inputs_a)
-    preds_b = model.predict(inputs_b)
+    def evaluate(datasetA, datasetB):
+        if test_run:
+            examples_a = list(tfds.as_numpy(datasetA.take(10)))
+            examples_b = list(tfds.as_numpy(datasetB.take(10)))
+        else:
+            examples_a = list(tfds.as_numpy(datasetA))
+            examples_b = list(tfds.as_numpy(datasetB))
+        inputs_a = np.array([x['image'] for x in examples_a]) / 255.0
+        inputs_b = np.array([x['image'] for x in examples_b]) / 255.0
+        preds_a = model.predict(inputs_a)
+        preds_b = model.predict(inputs_b)
 
-    accuracy = np.mean([int(x[0] > x[1]) for x in preds_a] + [int(x[1] > x[0]) for x in preds_b])
-    cross_entropy = np.mean([-math.log(x[0]) for x in preds_a] + [-math.log(x[1]) for x in preds_b])
-    print('Accuracy:', accuracy)
-    print('Cross Entropy Loss:', cross_entropy)
+        accuracy = np.mean([int(x[0] > x[1]) for x in preds_a] + [int(x[1] > x[0]) for x in preds_b])
+        cross_entropy = np.mean([-math.log(x[0]) for x in preds_a] + [-math.log(x[1]) for x in preds_b])
+
+        return accuracy, cross_entropy
+
+    ds = tfds.load(DATASET_NAME)
+    # if test_run:
+    #     examples_a = list(tfds.as_numpy(ds['testA'].take(10)))
+    #     examples_b = list(tfds.as_numpy(ds['testB'].take(10)))
+    # else:
+    #     examples_a = list(tfds.as_numpy(ds['testA']))
+    #     examples_b = list(tfds.as_numpy(ds['testB']))
+    # inputs_a = np.array([x['image'] for x in examples_a]) / 255.0
+    # inputs_b = np.array([x['image'] for x in examples_b]) / 255.0
+    # preds_a = model.predict(inputs_a)
+    # preds_b = model.predict(inputs_b)
+    #
+    # accuracy = np.mean([int(x[0] > x[1]) for x in preds_a] + [int(x[1] > x[0]) for x in preds_b])
+    # cross_entropy = np.mean([-math.log(x[0]) for x in preds_a] + [-math.log(x[1]) for x in preds_b])
+
+    train_accuracy, train_cross_entropy = evaluate(ds['trainA'], ds['trainB'])
+    test_accuracy, test_cross_entropy = evaluate(ds['testA'], ds['testB'])
+
+    print('Train Accuracy:', train_accuracy)
+    print('Train Cross Entropy Loss:', train_cross_entropy)
+
+    print('Test Accuracy:', test_accuracy)
+    print('Test Cross Entropy Loss:', test_cross_entropy)
 
     filename = BASE_PATH + 'search_log.txt'
     if os.path.exists(filename):
@@ -141,8 +184,10 @@ def test(args, model):
 
     with open(filename, append_write) as fp:
         fp.write('\n' + args.output_folder + '\n')
-        fp.write('Accuracy: %f\n' % accuracy)
-        fp.write('Cross Entropy Loss: %f\n' % cross_entropy)
+        fp.write('Train Accuracy: %f\n' % train_accuracy)
+        fp.write('Train Cross Entropy Loss: %f\n' % train_cross_entropy)
+        fp.write('Test Accuracy: %f\n' % test_accuracy)
+        fp.write('Test Cross Entropy Loss: %f\n' % test_cross_entropy)
 
 
 if __name__ == '__main__':
@@ -162,6 +207,8 @@ if __name__ == '__main__':
                         help="Currently supports: Adadelta, Adagrad, Adam, Adamax, Ftrl, Nadam, RMSprop, SGD")
     parser.add_argument("--base_learning_rate", default=0.01, type=float,
                         help="Starting learning rate of the optimizer")
+    parser.add_argument("--training_epochs", type=int, default=50,
+                        help="Number of epochs in training")
 
     # Model params
     parser.add_argument("--additional_conv_layers", type=int, default=0,
@@ -184,10 +231,13 @@ if __name__ == '__main__':
     if test_run:
         test_args = [
             "--optimizer", "RMSprop",
-            "--output_folder", "a2o_rmsp_t1",
+            "--output_folder", "a2o_rmsp_t6",
+            "--training_epochs", "1",
             "--global_max_pooling",
             "--additional_conv_layers", "2",
-            "--dense_sizes", "256"
+            "--dense_sizes", "8096,1024",
+            "--dense_dropout",
+            "--dense_batch_normalization"
         ]
         args = parser.parse_args(test_args)
         print('Using the default test argument:')
