@@ -21,6 +21,7 @@ from tensorflow.keras.layers import Flatten
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 import itertools
 from time import time
+import json
 
 # from keras.applications import VGG16
 # from keras.models import Model
@@ -135,9 +136,11 @@ def performance(model, data_gen, top_k, output):
     })
     results["match"] = (results["Predictions"].values == results["label"].values)
     # top_k_accuracy = results["in_top_k"].mean()
-    print("Test score: {x}".format(x=results["match"].mean()))
+    score = results["match"].mean()
+    print("Test score: {x}".format(x=score))
     # print("Top k score: {x}".format(x=top_k_accuracy))
     results.to_csv(os.path.join(output, "performance.csv"))
+    return score
 
 
 def modeling(data_gens, pretrain_model, optimizer, batch_size, epochs, ckpt_path,
@@ -190,7 +193,8 @@ def modeling(data_gens, pretrain_model, optimizer, batch_size, epochs, ckpt_path
     model.save_weights(os.path.join(ckpt_path, "{model_name}_weights_keras.h5".format(model_name=model_name)))
     model.save(os.path.join(ckpt_path,"{model_name}_keras.h5".format(model_name=model_name)))
     output1 = os.path.join(ckpt_path, "performance")
-    performance(model, evaluation_generator, 1, output1)
+    score = performance(model, evaluation_generator, 1, output1)
+    return score
 
 
 def generate_hyperparameter(params_dict):
@@ -204,11 +208,13 @@ if __name__ == '__main__':
     IMAGE_WIDTH=256
     IMAGE_HEIGHT=256
     IMAGE_CHANNELS=3
-    data_path = '/home/ptien/tfds-download/apple2orange/'
-    # ckpt_path = "./test_model/"
-    # model_name = "horse2zebra"
-    epochs=200
-    batch_size=32
+    with open("gs_config.json") as f:
+        config = json.load(f)
+    
+    # data_path = '/home/ptien/tfds-download/apple2orange/'
+    data_path = config["data_path"]
+    epochs=config["epochs"]
+    batch_size=config["batch_size"]
     model_dict = {
         "VGG16": VGG16,
         "MobileNet": MobileNet,
@@ -234,14 +240,16 @@ if __name__ == '__main__':
         "RMSprop": tf.keras.optimizers.RMSprop,
         "Nadam": tf.keras.optimizers.Nadam
     }
-    experiment_confg = {
-        "optimizer": ["Adadelta", "Adam"],
-        "pretrain_model": ["VGG16", "MobileNet"]
-    }
+    # experiment_confg = {
+    #     "optimizer": ["Adadelta", "Adam"],
+    #     "pretrain_model": ["VGG16", "MobileNet"]
+    # }
+    experiment_confg = config["experiment_confg"]
     experiments = generate_hyperparameter(experiment_confg)
     num_exp = len(experiments)
     print("number of experiments: {x}".format(x=num_exp))
-    output = "/home/ptien/temp/experiments/"
+    output = config["output"]
+    res_summary = []
     for i in range(num_exp):
         t0 = time()
         exp_config = experiments[i]
@@ -254,8 +262,10 @@ if __name__ == '__main__':
         exp_name = str(i)+ "_" + model_name + "_" + opt_name
         print(exp_name)
         ckpt_path = os.path.join(output, exp_name)
-        modeling(data_gens, pretrain_model, optimizer, batch_size, epochs, ckpt_path,
-                 IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS)
+        score = modeling(data_gens, pretrain_model, optimizer, batch_size, epochs, ckpt_path,
+                         IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS)
         time_elpase = (time() -t0)/60.0
-        print("time elpase: {x}".format(x=time_elpase))
+        print("{name}: time elapse: {x}".format(name=exp_name,x=time_elpase))
+        res_summary += [[exp_name, time_elpase, score]]
         del data_gens
+    pd.DataFrame(res_summary, columns=["id", "elapsed_mins", "metrics"]).to_csv(os.path.join(output, "summary.csv"))

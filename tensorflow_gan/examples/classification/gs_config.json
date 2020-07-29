@@ -1,0 +1,10 @@
+{
+    "data_path": "/home/ptien/tfds-download/apple2orange/",
+    "output": "/home/ptien/temp/experiments/",
+    "experiment_confg": {
+	"optimizer": ["Adadelta", "Adam", "Adagrad", "SGD", "RMSprop"],
+	"pretrain_model": ["VGG16", "MobileNet", "MobileNetV2"]
+    },
+    "epochs": 200,
+    "batch_size": 32
+}
