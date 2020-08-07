@@ -281,9 +281,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
 
     network_discriminator = network.CustomKerasDiscriminator(hparams.cls_model + '/base_model.h5')
     # network_discriminator = network.custom_keras_discriminator(hparams.cls_model)
-
     # tf.keras.estimator.model_to_estimator(keras_model_path=hparams.cls_model, model_dir='/tmp/temp_checkpoint/')
-
   elif hparams.cls_checkpoint:
     network_discriminator = network.custom_tf_discriminator()
   else:
@@ -317,7 +315,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
       patch_size=hparams.patch_size,
       num_parallel_calls=None,
       shuffle=True,
-      tfdata_source=hparams.tfdata_source,
+      tfds_name=hparams.tfdata_source,
       domains=tuple(hparams.tfdata_source_domains.split(",")),
       download=eval(hparams.download),
       data_dir=hparams.data_dir)
@@ -325,11 +323,16 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
     if hparams.tfdata_source.startswith('cycle_gan'):
         test_images_np = data_provider.provide_cyclegan_test_set(hparams.patch_size)
         num_domains = 2
-    else:
+    elif hparams.tfdata_source == 'celeb_a':
         test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size,
                                                                download=eval(hparams.download),
                                                                data_dir=hparams.data_dir)
         num_domains = len(test_images_np)
+    else:
+        test_images_np, num_domains = data_provider.provide_categorized_test_set(hparams.tfdata_source,
+                                                                    hparams.patch_size,
+                                                                    download=eval(hparams.download),
+                                                                    data_dir=hparams.data_dir)
 
 
   else:
@@ -348,4 +351,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
     stargan_estimator.train(train_input_fn, steps=cur_step)
     summary_img = _get_summary_image(stargan_estimator, test_images_np, num_domains)
     with tf.io.gfile.GFile(filename_str % cur_step, 'w') as f:
-      PIL.Image.fromarray((255 * summary_img).astype(np.uint8)).save(f, 'PNG')
+        # Handle single-channel images
+        if summary_img.shape[2] == 1:
+            summary_img = np.repeat(summary_img, 3, axis=2)
+        PIL.Image.fromarray((255 * summary_img).astype(np.uint8)).save(f, 'PNG')

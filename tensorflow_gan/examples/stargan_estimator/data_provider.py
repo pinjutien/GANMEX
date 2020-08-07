@@ -20,6 +20,7 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
+import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow_gan.examples.cyclegan import data_provider as cyclegan_dp
 from tensorflow_gan.examples.stargan import data_provider
@@ -64,6 +65,57 @@ def provide_celeba_test_set(patch_size, download, data_dir, num_images=3):
   assert images.shape == (num_images, patch_size, patch_size, 3)
 
   return images
+
+
+def provide_categorized_test_set(tfds_name, patch_size, download, data_dir, num_images=6):
+    """Provide one example of every class.
+
+    Args:
+      patch_size: Python int. The patch size to extract.
+
+    Returns:
+      An `np.array` of shape (num_domains, H, W, C) representing the images.
+        Values are in [-1, 1].
+    """
+    ds, info = tfds.load(tfds_name, download=download, data_dir=data_dir, split='test', with_info=True)
+    num_classes = info.features['label'].num_classes
+    num_channels = info.features['image'].shape[2]
+    image_size_max = max(info.features['image'].shape[:2])
+    if patch_size > image_size_max:
+        print('Raw image shape is %s. Capping the patch_size at %d' % (str(info.features['image'].shape), image_size_max))
+        patch_size = image_size_max
+
+    def _preprocess(x):
+      return {
+          'image': cyclegan_dp.full_image_to_patch(x['image'], patch_size, num_channels),
+          'label': x['label'],
+      }
+    ds = ds.map(_preprocess)
+    ds_np = tfds.as_numpy(ds)
+
+    # Get one image of each hair type.
+    images = []
+    labels = []
+    targets = set()
+    while len(images) < num_images:
+        if not targets:
+            targets = set(range(num_classes))
+
+        elem = next(ds_np)
+        if elem['label'] in targets:
+            targets.remove(elem['label'])
+
+            images.append(elem['image'])
+            labels.append(tf.one_hot(elem['label'], num_classes))
+
+    images = np.array(images, dtype=np.float32)
+
+    assert images.dtype == np.float32
+    assert np.max(np.abs(images)) <= 1.0
+    assert images.shape == (num_images, patch_size, patch_size, num_channels)
+
+    return images, num_classes
+
 
 def provide_cyclegan_test_set(patch_size, num_images=6):
   """Provide one example of every class.

@@ -57,17 +57,17 @@ def _sample_patch(image, patch_size):
   image = tf.expand_dims(image, axis=0)
   image = tf.compat.v1.image.resize(image, [patch_size, patch_size])
   image = tf.squeeze(image, axis=0)
-  # Force image num_channels = 3
-  image = tf.tile(image, [1, 1, tf.maximum(1, 4 - tf.shape(input=image)[2])])
-  image = tf.slice(image, [0, 0, 0], [patch_size, patch_size, 3])
+  # # Force image num_channels = 3. Disabled to support single-channel images
+  # image = tf.tile(image, [1, 1, tf.maximum(1, 4 - tf.shape(input=image)[2])])
+  # image = tf.slice(image, [0, 0, 0], [patch_size, patch_size, 3])
   return image
 
 
-def full_image_to_patch(image, patch_size):
+def full_image_to_patch(image, patch_size, num_channels=3):
   image = normalize_image(image)
   # Sample a patch of fixed size.
   image_patch = _sample_patch(image, patch_size)
-  image_patch.shape.assert_is_compatible_with([patch_size, patch_size, 3])
+  image_patch.shape.assert_is_compatible_with([patch_size, patch_size, num_channels])
   return image_patch
 
 
