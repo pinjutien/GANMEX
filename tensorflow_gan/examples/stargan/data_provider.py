@@ -95,6 +95,7 @@ def provide_categorized_dataset(tfds_name,
                                 batch_size,
                                 patch_size,
                                 split='train',
+                                color_labeled=0,
                                 num_parallel_calls=None,
                                 shuffle=True,
                                 download=True,
@@ -107,6 +108,7 @@ def provide_categorized_dataset(tfds_name,
       patch_size: Python int. The patch size to extract.
       num_classes: number for classes.
       split: Either 'train' or 'test'.
+      color_labeled: Fill in color
       num_parallel_calls: Number of threads dedicated to parsing.
       shuffle: Whether to shuffle.
 
@@ -125,15 +127,36 @@ def provide_categorized_dataset(tfds_name,
     print("[**] Load tf data source: {tfdata_source}".format(tfdata_source=tfds_name))
     ds, info = tfds.load(tfds_name, split=split, shuffle_files=shuffle, with_info=True, download=download, data_dir=data_dir)
 
-    if set(info.features.keys()) != set(['image', 'label']):
+    if 'image' not in info.features.keys() or 'label' not in info.features.keys():
         raise NotImplementedError('Unsupported tfds name:' + tfds_name)
 
     num_classes = info.features['label'].num_classes
     num_channels = info.features['image'].shape[2]
-    image_size_max = max(info.features['image'].shape[:2])
-    if patch_size > image_size_max:
-        print('Raw image shape is %s. Capping the patch_size at %d' % (str(info.features['image'].shape), image_size_max))
-        patch_size = image_size_max
+    if info.features['image'].shape[0] is not None and info.features['image'].shape[1] is not None:
+        image_size_max = max(info.features['image'].shape[:2])
+        if patch_size > image_size_max:
+            print('Raw image shape is %s. Capping the patch_size at %d' % (str(info.features['image'].shape), image_size_max))
+            patch_size = image_size_max
+
+    if color_labeled and num_channels == 1:
+        if color_labeled == 2:
+            num_classes = 3
+        def _color_label(element):
+            bw_image = element['image']
+            blank_image = tf.zeros(bw_image.get_shape(), dtype=tf.uint8)
+            image_sum = tf.cast(tf.reduce_sum(bw_image), tf.int32)
+            color = tf.math.floormod(image_sum, 3)
+            image = [(bw_image if tf.math.equal(color, x) else blank_image) for x in range(3)]
+            image = tf.concat(image, axis=2)
+
+            if color_labeled == 2:
+                label = color
+            else:
+                label = element['label']
+
+            return {'image': image, 'label': label}
+        ds = ds.map(_color_label)
+        num_channels = 3
 
     def _filter_pred(label):
         def _filter(element):
@@ -172,6 +195,7 @@ def provide_data(tfds_name,
                  batch_size,
                  patch_size,
                  split='train',
+                 color_labeled=0,
                  num_parallel_calls=None,
                  shuffle=True,
                  domains=('Black_Hair', 'Blond_Hair', 'Brown_Hair'),
@@ -225,6 +249,7 @@ def provide_data(tfds_name,
         else:
             ds = provide_categorized_dataset(tfds_name, batch_size, patch_size,
                                              split=split,
+                                             color_labeled=color_labeled,
                                              num_parallel_calls=num_parallel_calls,
                                              shuffle=shuffle,
                                              download=download,

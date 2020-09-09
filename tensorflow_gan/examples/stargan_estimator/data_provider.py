@@ -29,7 +29,7 @@ import PIL
 provide_data = data_provider.provide_data
 
 
-def provide_celeba_test_set(patch_size, download, data_dir, num_images=3):
+def provide_celeba_test_set(patch_size, download=True, data_dir=None, num_images=3):
   """Provide one example of every class.
 
   Args:
@@ -64,10 +64,7 @@ def provide_celeba_test_set(patch_size, download, data_dir, num_images=3):
   assert np.max(np.abs(images)) <= 1.0
   assert images.shape == (num_images, patch_size, patch_size, 3)
 
-  return images
-
-
-def provide_categorized_test_set(tfds_name, patch_size, download, data_dir, num_images=6):
+def provide_categorized_test_set(tfds_name, patch_size, color_labeled=0, download=True, data_dir=None, num_images=10):
     """Provide one example of every class.
 
     Args:
@@ -77,13 +74,35 @@ def provide_categorized_test_set(tfds_name, patch_size, download, data_dir, num_
       An `np.array` of shape (num_domains, H, W, C) representing the images.
         Values are in [-1, 1].
     """
-    ds, info = tfds.load(tfds_name, download=download, data_dir=data_dir, split='test', with_info=True)
+    split = 'train' if tfds_name == 'cats_vs_dogs' else 'test'
+    ds, info = tfds.load(tfds_name, download=download, data_dir=data_dir, split=split, with_info=True)
     num_classes = info.features['label'].num_classes
     num_channels = info.features['image'].shape[2]
-    image_size_max = max(info.features['image'].shape[:2])
-    if patch_size > image_size_max:
-        print('Raw image shape is %s. Capping the patch_size at %d' % (str(info.features['image'].shape), image_size_max))
-        patch_size = image_size_max
+    if info.features['image'].shape[0] is not None and info.features['image'].shape[1] is not None:
+        image_size_max = max(info.features['image'].shape[:2])
+        if patch_size > image_size_max:
+            print('Raw image shape is %s. Capping the patch_size at %d' % (str(info.features['image'].shape), image_size_max))
+            patch_size = image_size_max
+
+    if color_labeled and num_channels == 1:
+        if color_labeled == 2:
+            num_classes = 3
+        def _color_label(element):
+            bw_image = element['image']
+            blank_image = tf.zeros(bw_image.get_shape(), dtype=tf.uint8)
+            image_sum = tf.cast(tf.reduce_sum(bw_image), tf.int32)
+            color = tf.math.floormod(image_sum, 3)
+            image = [(bw_image if tf.math.equal(color, x) else blank_image) for x in range(3)]
+            image = tf.concat(image, axis=2)
+
+            if color_labeled == 2:
+                label = color
+            else:
+                label = element['label']
+
+            return {'image': image, 'label': label}
+        ds = ds.map(_color_label)
+        num_channels = 3
 
     def _preprocess(x):
       return {
@@ -117,17 +136,18 @@ def provide_categorized_test_set(tfds_name, patch_size, download, data_dir, num_
     return images, num_classes
 
 
-def provide_cyclegan_test_set(patch_size, num_images=6):
+def provide_cyclegan_test_set(tfds_name, patch_size, num_images=6):
   """Provide one example of every class.
 
   Args:
+    tfds_name: string, tfds name
     patch_size: Python int. The patch size to extract.
 
   Returns:
     An `np.array` of shape (num_domains, H, W, C) representing the images.
       Values are in [-1, 1].
   """
-  ds = tfds.load('cycle_gan')
+  ds = tfds.load(tfds_name)
 
   num_images_B = num_images // 2
   num_images_A = num_images - num_images_B

@@ -36,7 +36,7 @@ HParams = collections.namedtuple('HParams', [
     'discriminator_lr', 'max_number_of_steps', 'steps_per_eval', 'adam_beta1',
     'adam_beta2', 'gen_disc_step_ratio', 'master', 'ps_tasks', 'task', 'tfdata_source', 'tfdata_source_domains',
     'download', 'data_dir', 'cls_model', 'cls_checkpoint', 'save_checkpoints_steps', 'keep_checkpoint_max',
-    'reconstruction_loss_weight', 'self_consistency_loss_weight', 'classification_loss_weight'])
+    'reconstruction_loss_weight', 'self_consistency_loss_weight', 'classification_loss_weight', 'use_color_labels'])
 
 
 def _get_optimizer(gen_lr, dis_lr, beta1, beta2):
@@ -310,18 +310,19 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
   if (hparams.tfdata_source):
     print("[**] load train dataset: tensorflow dataset: {x}".format(x=hparams.tfdata_source))
     train_input_fn = lambda: data_provider.provide_data(  # pylint:disable=g-long-lambda
-      split='train',
-      batch_size=hparams.batch_size,
-      patch_size=hparams.patch_size,
-      num_parallel_calls=None,
-      shuffle=True,
-      tfds_name=hparams.tfdata_source,
-      domains=tuple(hparams.tfdata_source_domains.split(",")),
-      download=eval(hparams.download),
-      data_dir=hparams.data_dir)
+        hparams.tfdata_source,
+        hparams.batch_size,
+        hparams.patch_size,
+        split='train',
+        color_labeled=hparams.use_color_labels,
+        num_parallel_calls=None,
+        shuffle=True,
+        domains=tuple(hparams.tfdata_source_domains.split(",")),
+        download=eval(hparams.download),
+        data_dir=hparams.data_dir)
 
     if hparams.tfdata_source.startswith('cycle_gan'):
-        test_images_np = data_provider.provide_cyclegan_test_set(hparams.patch_size)
+        test_images_np = data_provider.provide_cyclegan_test_set(hparams.tfdata_source, hparams.patch_size)
         num_domains = 2
     elif hparams.tfdata_source == 'celeb_a':
         test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size,
@@ -330,9 +331,10 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
         num_domains = len(test_images_np)
     else:
         test_images_np, num_domains = data_provider.provide_categorized_test_set(hparams.tfdata_source,
-                                                                    hparams.patch_size,
-                                                                    download=eval(hparams.download),
-                                                                    data_dir=hparams.data_dir)
+                                                                                 hparams.patch_size,
+                                                                                 color_labeled=hparams.use_color_labels,
+                                                                                 download=eval(hparams.download),
+                                                                                 data_dir=hparams.data_dir)
 
 
   else:

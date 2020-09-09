@@ -27,7 +27,7 @@ from tensorflow_gan.examples.stargan_estimator import train_lib
 
 # FLAGS for data.
 flags.DEFINE_integer('batch_size', 6, 'The number of images in each batch.')
-flags.DEFINE_integer('patch_size', 128, 'The patch size of images.')
+flags.DEFINE_integer('patch_size', 256, 'The patch size of images.')
 
 ## Next cw100 scl100
 ## tweak gen_disc_step_ratio
@@ -35,21 +35,21 @@ flags.DEFINE_integer('patch_size', 128, 'The patch size of images.')
 
 # Write-to-disk flags.
 flags.DEFINE_string('output_dir',
-                    '/tmp/tfgan_mnist_test/stargan_estimator/out/',
+                    '/tmp/tfgan_logdir_keras_rmsp_v1_cw1000_sw100_rw0/stargan_estimator/out/',
                     # '/tmp/tfgan_rps_test_p128_gd02/stargan_estimator/out/',
                     # '/tmp/tfgan_logdir_keras_rmsp_v1_cw100_scl100_smooth/stargan_estimator/out/',
                     # '/tmp/stargan_logdir_gentest_p128_scl0_smoothBL_cks3/stargan_estimator/out/',
                     # '/tmp/tfgan_logdir_p128_hack1/stargan_estimator/out/',
                     'Directory where to write summary image.')
-flags.DEFINE_string('tfdata_source', 'mnist',
+flags.DEFINE_string('tfdata_source', 'cycle_gan',
                     'load tf dataset. celeb_a, cycle_gan, mnist, rock_paper_scissors')
 flags.DEFINE_string('tfdata_source_domains', 'Black_Hair,Blond_Hair,Brown_Hair',
                     'celeb_a domain: default=Black_Hair,Blond_Hair,Brown_Hair')
 flags.DEFINE_string('download', "True", "download data from tensorflow_datasets")
 flags.DEFINE_string('data_dir', None, "directly load data from data_dir")
 flags.DEFINE_string('cls_model',
-                    None,
-                    # '/home/ec2-user/gan/test_model/rmsp_std_conv1_gmp_ds1024_dbn/',
+                    # None,
+                    "/home/ec2-user/gan/test_model/rmsp_std_conv1_gmp_ds1024_dbn/",
                     # '/Users/shengms/Code/gan/tensorflow_gan/examples/classification/test_model/test_a2o/',
                     "load classification model in discriminator of stargan")
 flags.DEFINE_string('cls_checkpoint',
@@ -66,16 +66,18 @@ flags.DEFINE_integer('steps_per_eval', 2000,
                      'The number of steps after which we write eval to disk.')
 flags.DEFINE_float('adam_beta1', 0.9, 'Adam Beta 1 for the Adam optimizer. Default = 0.5 Current Best = 0.9')
 flags.DEFINE_float('adam_beta2', 0.999, 'Adam Beta 2 for the Adam optimizer. Default = 0.999')
-flags.DEFINE_float('gen_disc_step_ratio', 0.2,
+flags.DEFINE_float('gen_disc_step_ratio', 1.0,
                    'Generator:Discriminator training step ratio. Default = 0.2 Current Best = 1.0')
 flags.DEFINE_integer('save_checkpoints_steps', 2000,
                      'Save checkpoint every n step.')
 flags.DEFINE_integer('keep_checkpoint_max', 250, 'Max number of checkpoints to keep.')
 
-flags.DEFINE_float('reconstruction_loss_weight', 10.0, 'Default = 10.0')
-flags.DEFINE_float('self_consistency_loss_weight', 0.0, 'Put in 0.0 if not in use. Current Best = 1000.0')
-flags.DEFINE_float('classification_loss_weight', 1.0, 'Default = 1.0')
+flags.DEFINE_float('reconstruction_loss_weight', 0.0, 'Default = 10.0')
+flags.DEFINE_float('self_consistency_loss_weight', 100.0, 'Put in 0.0 if not in use. Current Best = 1000.0')
+flags.DEFINE_float('classification_loss_weight', 1000.0, 'Default = 1.0')
 
+flags.DEFINE_integer('use_color_labels', 1,
+                     'Fill in RGB colors for black and white dataset. 1: original labels, 2: color labels')
 
 # FLAGS for distributed training.
 flags.DEFINE_string('master', '', 'Name of the TensorFlow master to use.')
@@ -103,7 +105,8 @@ def main(_):
                               FLAGS.save_checkpoints_steps, FLAGS.keep_checkpoint_max,
                               FLAGS.reconstruction_loss_weight,
                               FLAGS.self_consistency_loss_weight,
-                              FLAGS.classification_loss_weight)
+                              FLAGS.classification_loss_weight,
+                              FLAGS.use_color_labels)
 
   override_generator_fn = None
   # override_generator_fn = network.generator_hack

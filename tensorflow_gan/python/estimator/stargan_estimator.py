@@ -399,7 +399,7 @@ def _get_train_estimator_spec(gan_model,
 
     scaffold = tf.train.Scaffold(init_fn=init_fn)
 
-  elif cls_checkpoint: # True:
+  elif cls_checkpoint:
     # Load pre-trained parameters here
     var_list = []
 
