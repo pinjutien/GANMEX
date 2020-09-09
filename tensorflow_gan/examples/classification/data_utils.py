@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import tensorflow_datasets as tfds
 
+from PIL import Image
 from keras.datasets import cifar10
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
@@ -73,9 +74,14 @@ def get_generators_from_df_path(df, data_path, target_size, batch_size):
     return train_generator, val_generator, train_size, val_size
 
 
-def get_generators_from_tfds(dataset_name, batch_size, num_classes=2, test_run=False, train_val_split=True):
-    ds = tfds.load(dataset_name)
-    raw_train = list(tfds.as_numpy(ds['trainA'])) + list(tfds.as_numpy(ds['trainB']))
+def get_generators_from_tfds(dataset_name, target_shape, batch_size, test_run=False, train_val_split=True):
+    ds, info = tfds.load(dataset_name, with_info=True)
+    num_classes = info.features['label'].num_classes
+
+    if dataset_name.startswith('cycle_gan'):
+        raw_train = list(tfds.as_numpy(ds['trainA'])) + list(tfds.as_numpy(ds['trainB']))
+    else:
+        raw_train = list(tfds.as_numpy(ds['train']))
 
     if train_val_split:
         raw_train, raw_val = train_test_split(raw_train, test_size=0.20, random_state=42)
@@ -85,19 +91,29 @@ def get_generators_from_tfds(dataset_name, batch_size, num_classes=2, test_run=F
 
     train_size = len(raw_train)
 
-    x_train = np.array([a['image'] for a in raw_train])
+    input_shape = (info.features['image'].shape[0], info.features['image'].shape[1])
+    if input_shape != target_shape:
+        x_train = np.array([np.array(Image.fromarray(a['image']).resize(target_shape)) for a in raw_train])
+    else:
+        x_train = np.array([a['image'] for a in raw_train])
+
     y_train = np.array([a['label'] for a in raw_train])
     y_train = np_utils.to_categorical(y_train, num_classes)
 
-    train_datagen = ImageDataGenerator(
-        rotation_range=15,
-        rescale=1. / 255,
-        shear_range=0.1,
-        zoom_range=0.2,
-        horizontal_flip=True,
-        width_shift_range=0.1,
-        height_shift_range=0.1
-    )
+    if dataset_name == 'mnist':
+        train_datagen = ImageDataGenerator(
+            rescale=1. / 255,
+        )
+    else:
+        train_datagen = ImageDataGenerator(
+            rotation_range=15,
+            rescale=1. / 255,
+            shear_range=0.1,
+            zoom_range=0.2,
+            horizontal_flip=True,
+            width_shift_range=0.1,
+            height_shift_range=0.1
+        )
     train_generator = train_datagen.flow(x_train, y_train, batch_size=32)
 
     if train_val_split:

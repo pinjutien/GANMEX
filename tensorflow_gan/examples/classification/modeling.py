@@ -59,7 +59,6 @@ df, data_path = get_data(data_path)
 
 IMAGE_WIDTH=256
 IMAGE_HEIGHT=256
-IMAGE_SIZE=(IMAGE_WIDTH, IMAGE_HEIGHT)
 IMAGE_CHANNELS=3
 
 
@@ -88,7 +87,7 @@ train_generator = train_datagen.flow_from_dataframe(
     data_path,
     x_col='filename',
     y_col='category',
-    target_size=IMAGE_SIZE,
+    target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
     class_mode='categorical',
     a=batch_size
 )
@@ -98,7 +97,7 @@ validation_generator = validation_datagen.flow_from_dataframe(
     data_path,
     x_col='filename',
     y_col='category',
-    target_size=IMAGE_SIZE,
+    target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
     class_mode='categorical',
     batch_size=batch_size
 )

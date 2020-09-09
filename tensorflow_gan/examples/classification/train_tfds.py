@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import argparse
+import json
 import os
 import math
 import numpy as np
@@ -20,8 +21,9 @@ from tensorflow.keras.layers import Dense, Flatten, Activation
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
 from tensorflow_gan.examples.classification.data_utils import *
-from tensorflow_gan.examples.classification.model_utils import get_model
+from tensorflow_gan.examples.classification.model_utils import *
 
+train_val_split = True
 test_run = False
 use_cpu = False
 if (use_cpu):
@@ -31,10 +33,15 @@ if (use_cpu):
 
 IMAGE_WIDTH=256
 IMAGE_HEIGHT=256
-IMAGE_SIZE=(IMAGE_WIDTH, IMAGE_HEIGHT)
 IMAGE_CHANNELS=3
 DATASET_NAME = 'cycle_gan'
 
+# IMAGE_WIDTH=28
+# IMAGE_HEIGHT=28
+# IMAGE_CHANNELS=1
+# DATASET_NAME = 'mnist'
+
+IMAGE_SIZE=(IMAGE_WIDTH, IMAGE_HEIGHT)
 BASE_PATH = './test_model/'
 
 # Set random seed
@@ -42,75 +49,72 @@ seed(1)
 set_random_seed(2)
 
 
-def get_optimizer(args):
-    module = importlib.import_module(tf.keras.optimizers)
-    class_ = getattr(module, args.optimizer)
-    optimizer = class_(learning_rate=args.learning_rate)
-    return optimizer
-
-
 def train(args):
     # epochs = 1 if test_run else 50
     batch_size = 32
     os.makedirs(args.output_path, exist_ok=False)
+    with open(args.output_path + 'train_parameters.json', 'w') as fp:
+        json.dump(args.__dict__, fp, indent=4)
 
-    # train_generator, val_generator, train_size, val_size = get_generators_from_tfds(DATASET_NAME, 32, test_run=test_run)
-    train_generator, train_size = get_generators_from_tfds(DATASET_NAME, 32, test_run=test_run, train_val_split=False)
-
-    model = get_model(
-        (IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS),
-        base_model='vgg16',
-        additional_conv_layers=args.additional_conv_layers,
-        global_average_pooling=args.global_average_pooling,
-        global_max_pooling=args.global_max_pooling,
-        conv_batch_normalization=args.conv_batch_normalization,
-        conv_dropout=args.conv_dropout,
-        dense_batch_normalization=args.dense_batch_normalization,
-        dense_dropout=args.dense_dropout,
-        dense_sizes=[int(x) for x in args.dense_sizes.split(',') if int(x)],
-    )
+    if DATASET_NAME == 'mnist':
+        model = get_mnist_model((IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS))
+    else:
+        model = get_model(
+            (IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_CHANNELS),
+            base_model=args.base_model,  # 'vgg16',
+            additional_conv_layers=args.additional_conv_layers,
+            global_average_pooling=args.global_average_pooling,
+            global_max_pooling=args.global_max_pooling,
+            conv_batch_normalization=args.conv_batch_normalization,
+            conv_dropout=args.conv_dropout,
+            dense_batch_normalization=args.dense_batch_normalization,
+            dense_dropout=args.dense_dropout,
+            dense_sizes=[int(x) for x in args.dense_sizes.split(',') if int(x)],
+        )
 
     print("Base model summary:")
     model.summary()  # show model summary
     model.save(args.output_path + "model_summary")
-    model.compile(optimizer=tf.keras.optimizers.Adadelta(args.base_learning_rate),
+    model.compile(optimizer=get_optimizer(args),  # tf.keras.optimizers.Adadelta(args.base_learning_rate),
                   loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy'])
 
     model.save(args.output_path + "base_model.h5")
 
-    # earlystop = EarlyStopping(patience=10)
-    # learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc',
-    #                                             patience=2,
-    #                                             verbose=1,
-    #                                             factor=0.5,
-    #                                             min_lr=0.00001)
-    #
-    # callbacks = [earlystop, learning_rate_reduction]
+    if train_val_split:
+        train_generator, val_generator, train_size, val_size = get_generators_from_tfds(
+            DATASET_NAME, IMAGE_SIZE, 32, test_run=test_run)
 
-    # if args.save_checkpoints:
-    #     mdlckpt = ModelCheckpoint(args.output_path + 'model-{epoch:03d}-{val_acc:03f}.h5', save_best_only=True,
-    #                               monitor='val_acc', mode='max')
-    #     callbacks.append(mdlckpt)
+        earlystop = EarlyStopping(patience=10)
+        learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc',
+                                                    patience=2,
+                                                    verbose=1,
+                                                    factor=0.5,
+                                                    min_lr=0.00001)
 
-    max_step = 1 if test_run else 150
+        callbacks = [earlystop, learning_rate_reduction]
 
-    # history = model.fit_generator(
-    #     train_generator,
-    #     epochs=epochs,
-    #     validation_data=val_generator,
-    #     validation_steps=val_size // batch_size,  # max(max_step, val_size // batch_size),
-    #     steps_per_epoch=train_size // batch_size,  # max(max_step, train_size // batch_size),
-    #     callbacks=callbacks
-    # )
-    history = model.fit_generator(
-        train_generator,
-        epochs=args.training_epochs,
-        # validation_data=val_generator,
-        # validation_steps=val_size // batch_size,  # max(max_step, val_size // batch_size),
-        steps_per_epoch=train_size // batch_size,  # max(max_step, train_size // batch_size),
-        # callbacks=callbacks
-    )
+        if args.save_checkpoints:
+            mdlckpt = ModelCheckpoint(args.output_path + 'model-{epoch:03d}-{val_acc:03f}.h5', save_best_only=True,
+                                      monitor='val_acc', mode='max')
+            callbacks.append(mdlckpt)
+
+        history = model.fit_generator(
+            train_generator,
+            epochs=args.training_epochs,
+            validation_data=val_generator,
+            validation_steps=val_size // batch_size,  # max(max_step, val_size // batch_size),
+            steps_per_epoch=train_size // batch_size,  # max(max_step, train_size // batch_size),
+            callbacks=callbacks
+        )
+    else:
+        train_generator, train_size = get_generators_from_tfds(
+            DATASET_NAME, IMAGE_SIZE, 32, test_run=test_run, train_val_split=train_val_split)
+        history = model.fit_generator(
+            train_generator,
+            epochs=args.training_epochs,
+            steps_per_epoch=train_size // batch_size,
+        )
 
     return model
 
@@ -142,8 +146,9 @@ def test(args, model):
         else:
             examples_a = list(tfds.as_numpy(datasetA))
             examples_b = list(tfds.as_numpy(datasetB))
-        inputs_a = np.array([x['image'] for x in examples_a]) / 255.0
-        inputs_b = np.array([x['image'] for x in examples_b]) / 255.0
+        inputs_a = np.array([np.array(Image.fromarray(a['image']).resize(IMAGE_SIZE)) for a in examples_a]) / 255.0
+        inputs_b = np.array([np.array(Image.fromarray(a['image']).resize(IMAGE_SIZE)) for a in examples_b]) / 255.0
+
         preds_a = model.predict(inputs_a)
         preds_b = model.predict(inputs_b)
 
@@ -211,6 +216,9 @@ if __name__ == '__main__':
                         help="Number of epochs in training")
 
     # Model params
+    parser.add_argument("--base_model", type=str, default='VGG16',
+                        help="Currently supports: VGG16, MobileNet, MobileNetV2")
+
     parser.add_argument("--additional_conv_layers", type=int, default=0,
                         help="Additional convoluational layers on top of the pre-trained model")
     parser.add_argument("--global_average_pooling", action='store_true',
@@ -230,8 +238,10 @@ if __name__ == '__main__':
 
     if test_run:
         test_args = [
-            "--optimizer", "RMSprop",
-            "--output_folder", "a2o_rmsp_t6",
+            "--base_model", "MobileNet",
+            "--optimizer", "Adadelta",
+            "--base_learning_rate", "1.0",  # Adadelta should use a learning rate of 1.0
+            "--output_folder", "testtest",
             "--training_epochs", "1",
             "--global_max_pooling",
             "--additional_conv_layers", "2",
@@ -250,5 +260,5 @@ if __name__ == '__main__':
     args.output_path = BASE_PATH + args.output_folder + '/'
 
     model = train(args)
-    test(args, model)
     save_model(args, model)
+    test(args, model)
