@@ -76,10 +76,10 @@ def make_summary_images(checkpoint_dir, checkpoint_struct, dataset_name, num_exa
     input_oranges = [tfds.as_numpy(cyclegan_dp.full_image_to_patch(x['image'], 256)).astype('float32') for x in
                      examples_oranges]
 
-    discriminator_fn = network.discriminator
+    # discriminator_fn = network.discriminator
     # discriminator_fn = network.custom_tf_discriminator()
     # discriminator_fn = network.CustomKerasDiscriminator('/home/ec2-user/gan/test_model/a2o_rmsp/base_model.h5')
-    # discriminator_fn = network.CustomKerasDiscriminator('/home/ec2-user/gan/test_model/rmsp_std_conv1_gmp_ds1024_dbn/base_model.h5')
+    discriminator_fn = network.CustomKerasDiscriminator('/home/ec2-user/gan/test_model/a2o_v2/base_model.h5')
 
     stargan_estimator = tfgan.estimator.StarGANEstimator(
         model_dir=None,
@@ -115,20 +115,12 @@ def make_summary_images(checkpoint_dir, checkpoint_struct, dataset_name, num_exa
             PIL.Image.fromarray((255 * summary_orange).astype(np.uint8)).save(f, 'PNG')
 
 
-
-# checkpoint_path_pattern = '/Users/shengms/Code/gan_checkpoints/stargan_est_a2o_rw10/model.ckpt-%d'
-# checkpoint_numbers = list(range(10000, 140001, 10000))
-#
-# with tf.io.gfile.GFile(filename_str % cur_step, 'w') as f:
-#     PIL.Image.fromarray((255 * summary_img).astype(np.uint8)).save(f, 'PNG')
-
-
 if __name__ == '__main__':
     # if len(sys.argv) != 2:
     #     raise Exception('Please put the checkpoint directory as the only argument.')
     # checkpoint_dir = sys.argv[1:]
 
-    checkpoint_dir = '/tmp/tfgan_logdir_share0_scl1000_hack/stargan_estimator/out/checkpoints/'
+    checkpoint_dir = '/tmp/a2o_v2_cw100_sw20_rw10_gd05/stargan_estimator/out/checkpoints/'
     # checkpoint_dir = "/Users/pin-jutien/tfds-download/models_ckpts/stargan_est_glr2m5_gd1/"
     # checkpoint_dir = '/tmp/tfgan_logdir_keras_rmsp_v1_cw10_gd02/stargan_estimator/out/checkpoints/'
 

@@ -19,8 +19,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import getpass
+import numpy as np
+from scipy.io import loadmat
+
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import tensorflow.keras.utils as np_utils
 from tensorflow_gan.examples.cyclegan import data_provider
 from tensorflow_gan.examples.cyclegan.data_provider import provide_custom_datasets
 
@@ -158,6 +163,7 @@ def provide_categorized_dataset(tfds_name,
         ds = ds.map(_color_label)
         num_channels = 3
 
+    print('preprocessing')
     def _filter_pred(label):
         def _filter(element):
             # if element['label'] not in list(range(10)):
@@ -178,6 +184,7 @@ def provide_categorized_dataset(tfds_name,
             output_dict[idx] = {'images': patch, 'labels': label}
         return output_dict
 
+    print('parallel call')
     ds = (ds
           .map(_preprocess, num_parallel_calls=num_parallel_calls)
           .cache()
@@ -188,6 +195,7 @@ def provide_categorized_dataset(tfds_name,
           .batch(batch_size, drop_remainder=True)
           .prefetch(tf.data.experimental.AUTOTUNE))
 
+    print('done preprocessing')
     return ds
 
 

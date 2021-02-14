@@ -36,10 +36,6 @@ flags.DEFINE_integer('patch_size', 256, 'The patch size of images.')
 # Write-to-disk flags.
 flags.DEFINE_string('output_dir',
                     '/tmp/tfgan_logdir_keras_rmsp_v1_cw1000_sw100_rw0/stargan_estimator/out/',
-                    # '/tmp/tfgan_rps_test_p128_gd02/stargan_estimator/out/',
-                    # '/tmp/tfgan_logdir_keras_rmsp_v1_cw100_scl100_smooth/stargan_estimator/out/',
-                    # '/tmp/stargan_logdir_gentest_p128_scl0_smoothBL_cks3/stargan_estimator/out/',
-                    # '/tmp/tfgan_logdir_p128_hack1/stargan_estimator/out/',
                     'Directory where to write summary image.')
 flags.DEFINE_string('tfdata_source', 'cycle_gan',
                     'load tf dataset. celeb_a, cycle_gan, mnist, rock_paper_scissors')
@@ -50,7 +46,6 @@ flags.DEFINE_string('data_dir', None, "directly load data from data_dir")
 flags.DEFINE_string('cls_model',
                     # None,
                     "/home/ec2-user/gan/test_model/rmsp_std_conv1_gmp_ds1024_dbn/",
-                    # '/Users/shengms/Code/gan/tensorflow_gan/examples/classification/test_model/test_a2o/',
                     "load classification model in discriminator of stargan")
 flags.DEFINE_string('cls_checkpoint',
                     None,

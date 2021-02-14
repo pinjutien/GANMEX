@@ -207,6 +207,7 @@ def get_gan_model(mode,
     gan_model = _make_prediction_gan_model(input_data, input_data_domain_label,
                                            generator_fn, generator_scope)
   else:  # tf.estimator.ModeKeys.TRAIN or tf.estimator.ModeKeys.EVAL
+    # path for debugging only
     gan_model = _make_gan_model(generator_fn, discriminator_fn, input_data,
                                 input_data_domain_label, generator_scope,
                                 add_summaries, mode)
@@ -394,8 +395,6 @@ def _get_train_estimator_spec(gan_model,
 
     def init_fn(_scaffold, session):
       pretrain_saver.restore(session, cls_model + '/keras/keras_model.ckpt')
-                             # '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09_875886/converted_discriminator/keras/keras_model.ckpt')
-
 
     scaffold = tf.train.Scaffold(init_fn=init_fn)
 
@@ -414,10 +413,6 @@ def _get_train_estimator_spec(gan_model,
 
     def init_fn(_scaffold, session):
       pretrain_saver.restore(session, cls_checkpoint)
-                             # '/tmp/temp_checkpoint/keras/keras_model.ckpt')
-
-                             # '/Users/shengms/Code/gan_checkpoints/stargan_est_glr2m5_gd1_ab09/model.ckpt-130000')
-                             # '/home/ec2-user/gan_checkpoints/tfgan_logdir_glr2m5_gd1_ab09/stargan_estimator/out/checkpoints/model.ckpt-130000')
 
     scaffold = tf.train.Scaffold(init_fn=init_fn)
   else:

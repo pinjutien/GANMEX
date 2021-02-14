@@ -19,11 +19,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import getpass
 import numpy as np
+from scipy.io import loadmat
+
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow_gan.examples.cyclegan import data_provider as cyclegan_dp
 from tensorflow_gan.examples.stargan import data_provider
+from tensorflow_gan import custom_tfds
 import PIL
 
 provide_data = data_provider.provide_data
@@ -64,17 +68,23 @@ def provide_celeba_test_set(patch_size, download=True, data_dir=None, num_images
   assert np.max(np.abs(images)) <= 1.0
   assert images.shape == (num_images, patch_size, patch_size, 3)
 
-def provide_categorized_test_set(tfds_name, patch_size, color_labeled=0, download=True, data_dir=None, num_images=10):
+  return images
+
+
+def provide_categorized_test_set(tfds_name, patch_size, color_labeled=0, download=True, data_dir=None,
+                                 num_images=20, filtered_label=None):
     """Provide one example of every class.
 
     Args:
       patch_size: Python int. The patch size to extract.
+      filtered_label: None for all
 
     Returns:
       An `np.array` of shape (num_domains, H, W, C) representing the images.
         Values are in [-1, 1].
     """
-    split = 'train' if tfds_name == 'cats_vs_dogs' else 'test'
+    split = 'train' if tfds_name in ('plant_village_v0', 'plant_village_v1', 'kaggle_birds_v0', 'kaggle_birds_v1') \
+                else 'test'
     ds, info = tfds.load(tfds_name, download=download, data_dir=data_dir, split=split, with_info=True)
     num_classes = info.features['label'].num_classes
     num_channels = info.features['image'].shape[2]
@@ -114,18 +124,23 @@ def provide_categorized_test_set(tfds_name, patch_size, color_labeled=0, downloa
 
     # Get one image of each hair type.
     images = []
-    labels = []
-    targets = set()
-    while len(images) < num_images:
-        if not targets:
-            targets = set(range(num_classes))
 
-        elem = next(ds_np)
-        if elem['label'] in targets:
-            targets.remove(elem['label'])
+    if filtered_label is None:
+        targets = set()
+        while len(images) < num_images:
+            if not targets:
+                targets = set(range(num_classes))
 
-            images.append(elem['image'])
-            labels.append(tf.one_hot(elem['label'], num_classes))
+            elem = next(ds_np)
+            if elem['label'] in targets:
+                targets.remove(elem['label'])
+
+                images.append(elem['image'])
+    else:
+        while len(images) < num_images:
+            elem = next(ds_np)
+            if elem['label'] == filtered_label:
+                images.append(elem['image'])
 
     images = np.array(images, dtype=np.float32)
 
@@ -163,44 +178,3 @@ def provide_cyclegan_test_set(tfds_name, patch_size, num_images=6):
   assert images.shape == (num_images, patch_size, patch_size, 3)
 
   return images
-
-# def provide_celeba_test_set1(patch_size):
-#   """Provide one example of every class.
-
-#   Args:
-#     patch_size: Python int. The patch size to extract.
-
-#   Returns:
-#     An `np.array` of shape (num_domains, H, W, C) representing the images.
-#       Values are in [-1, 1].
-#   """
-#   ds = tfds.load('celeb_a', split='test')
-#   def _preprocess(x):
-#     return {
-#         'image': cyclegan_dp.full_image_to_patch(x['image'], patch_size), # x['image']
-#         'attributes': x['attributes'],
-#     }
-#   ds = ds.map(_preprocess)
-#   ds_np = tfds.as_numpy(ds)
-
-#   # Get one image of each hair type.
-#   images = []
-#   labels = []
-#   while len(images) < 3:
-#     elem = next(ds_np)
-#     attr = elem['attributes']
-#     cur_lbl = [attr['Black_Hair'], attr['Blond_Hair'], attr['Brown_Hair']]
-#     if cur_lbl not in labels:
-#       # output_path = "black_hair_{a1}_blond_hair_{a2}_brown_hair_{a3}.png".format(a1=int(attr['Black_Hair']),
-#       #                                                                            a2=int(attr['Blond_Hair']),
-#       #                                                                            a3=int(attr['Brown_Hair']))
-#       # PIL.Image.fromarray(elem['image']).save("./testdata/" + output_path)
-#       images.append(elem['image'])
-#       labels.append(cur_lbl)
-#   images = np.array(images, dtype=np.float32)
-#   labels = np.array(labels)
-  
-#   assert images.dtype == np.float32
-#   assert np.max(np.abs(images)) <= 1.0
-#   assert images.shape == (3, patch_size, patch_size, 3)
-#   return images, labels
