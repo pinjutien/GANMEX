@@ -36,7 +36,7 @@ HParams = collections.namedtuple('HParams', [
     'discriminator_lr', 'max_number_of_steps', 'steps_per_eval', 'adam_beta1',
     'adam_beta2', 'gen_disc_step_ratio', 'master', 'ps_tasks', 'task', 'tfdata_source', 'tfdata_source_domains',
     'download', 'data_dir', 'cls_model', 'cls_checkpoint', 'save_checkpoints_steps', 'keep_checkpoint_max',
-    'reconstruction_loss_weight', 'classification_loss_weight'])
+    'reconstruction_loss_weight', 'self_consistency_loss_weight', 'classification_loss_weight', 'use_color_labels'])
 
 
 def _get_optimizer(gen_lr, dis_lr, beta1, beta2):
@@ -123,6 +123,8 @@ def _get_stargan_loss(
     gradient_penalty_one_sided=False,
     reconstruction_loss_fn=tf.compat.v1.losses.absolute_difference,
     reconstruction_loss_weight=10.0,
+    self_consistency_loss_fn=tf.compat.v1.losses.absolute_difference,
+    self_consistency_loss_weight=0.0,
     classification_loss_fn=tf.compat.v1.losses.softmax_cross_entropy,
     classification_loss_weight=1.0,
     classification_one_hot=True,
@@ -215,12 +217,19 @@ def _get_stargan_loss(
             one_sided=gradient_penalty_one_sided,
             add_summaries=add_summaries) * gradient_penalty_weight
 
+      # Self-consistency Loss.
+      if self_consistency_loss_weight >= 0.0:
+          self_consistency_loss = self_consistency_loss_fn(model.input_data, model.generated_data)
+          generator_loss += self_consistency_loss * self_consistency_loss_weight
+          if add_summaries:
+              tf.compat.v1.summary.scalar('self_consistency_loss', self_consistency_loss)
+
       # Reconstruction Loss.
-      reconstruction_loss = reconstruction_loss_fn(model.input_data,
-                                                   model.reconstructed_data)
-      generator_loss += reconstruction_loss * reconstruction_loss_weight
-      if add_summaries:
-        tf.compat.v1.summary.scalar('reconstruction_loss', reconstruction_loss)
+      if reconstruction_loss_weight >= 0.0:
+          reconstruction_loss = reconstruction_loss_fn(model.input_data, model.reconstructed_data)
+          generator_loss += reconstruction_loss * reconstruction_loss_weight
+          if add_summaries:
+            tf.compat.v1.summary.scalar('reconstruction_loss', reconstruction_loss)
 
       # Classification Loss.
       generator_loss += _classification_loss_helper(
@@ -272,9 +281,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
 
     network_discriminator = network.CustomKerasDiscriminator(hparams.cls_model + '/base_model.h5')
     # network_discriminator = network.custom_keras_discriminator(hparams.cls_model)
-
     # tf.keras.estimator.model_to_estimator(keras_model_path=hparams.cls_model, model_dir='/tmp/temp_checkpoint/')
-
   elif hparams.cls_checkpoint:
     network_discriminator = network.custom_tf_discriminator()
   else:
@@ -286,6 +293,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
       discriminator_fn=override_discriminator_fn or network_discriminator,
       # loss_fn=tfgan.stargan_loss,
       loss_fn=_get_stargan_loss(reconstruction_loss_weight=hparams.reconstruction_loss_weight,
+                                self_consistency_loss_weight=hparams.self_consistency_loss_weight,
                                 classification_loss_weight=hparams.classification_loss_weight),
       generator_optimizer=gen_opt,
       discriminator_optimizer=dis_opt,
@@ -302,24 +310,31 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
   if (hparams.tfdata_source):
     print("[**] load train dataset: tensorflow dataset: {x}".format(x=hparams.tfdata_source))
     train_input_fn = lambda: data_provider.provide_data(  # pylint:disable=g-long-lambda
-      split='train',
-      batch_size=hparams.batch_size,
-      patch_size=hparams.patch_size,
-      num_parallel_calls=None,
-      shuffle=True,
-      tfdata_source=hparams.tfdata_source,
-      domains=tuple(hparams.tfdata_source_domains.split(",")),
-      download=eval(hparams.download),
-      data_dir=hparams.data_dir)
+        hparams.tfdata_source,
+        hparams.batch_size,
+        hparams.patch_size,
+        split='train',
+        color_labeled=hparams.use_color_labels,
+        num_parallel_calls=None,
+        shuffle=True,
+        domains=tuple(hparams.tfdata_source_domains.split(",")),
+        download=eval(hparams.download),
+        data_dir=hparams.data_dir)
 
     if hparams.tfdata_source.startswith('cycle_gan'):
-        test_images_np = data_provider.provide_cyclegan_test_set(hparams.patch_size)
+        test_images_np = data_provider.provide_cyclegan_test_set(hparams.tfdata_source, hparams.patch_size)
         num_domains = 2
-    else:
+    elif hparams.tfdata_source == 'celeb_a':
         test_images_np = data_provider.provide_celeba_test_set(hparams.patch_size,
                                                                download=eval(hparams.download),
                                                                data_dir=hparams.data_dir)
         num_domains = len(test_images_np)
+    else:
+        test_images_np, num_domains = data_provider.provide_categorized_test_set(hparams.tfdata_source,
+                                                                                 hparams.patch_size,
+                                                                                 color_labeled=hparams.use_color_labels,
+                                                                                 download=eval(hparams.download),
+                                                                                 data_dir=hparams.data_dir)
 
 
   else:
@@ -338,4 +353,7 @@ def train(hparams, override_generator_fn=None, override_discriminator_fn=None):
     stargan_estimator.train(train_input_fn, steps=cur_step)
     summary_img = _get_summary_image(stargan_estimator, test_images_np, num_domains)
     with tf.io.gfile.GFile(filename_str % cur_step, 'w') as f:
-      PIL.Image.fromarray((255 * summary_img).astype(np.uint8)).save(f, 'PNG')
+        # Handle single-channel images
+        if summary_img.shape[2] == 1:
+            summary_img = np.repeat(summary_img, 3, axis=2)
+        PIL.Image.fromarray((255 * summary_img).astype(np.uint8)).save(f, 'PNG')

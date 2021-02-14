@@ -178,7 +178,7 @@ def train(hparams):
 
     # Create the input dataset.
     with tf.compat.v1.name_scope('inputs'), tf.device('/cpu:0'):
-      images, labels = data_provider.provide_data('train', hparams.batch_size,
+      images, labels = data_provider.provide_data('celeb_a', hparams.batch_size,
                                                   hparams.patch_size)
 
     # Define the model.

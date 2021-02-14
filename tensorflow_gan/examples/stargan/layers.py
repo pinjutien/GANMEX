@@ -142,6 +142,69 @@ def generator_down_sample(input_net, final_num_outputs=256):
   return output_net
 
 
+def generator_down_sample_hack(input_net, final_num_outputs=16):
+  """
+  Minic generator_down_sample() but doesn't actually do the downsampling
+  """
+
+  # if final_num_outputs % 4 != 0:
+  #   raise ValueError('Final number outputs need to be divisible by 4.')
+
+  # Check the rank of input_net.
+  input_net.shape.assert_has_rank(4)
+
+  # # Check dimension 1 and dimension 2 are defined and divisible by 4.
+  # if input_net.shape[1]:
+  #   if input_net.shape[1] % 4 != 0:
+  #     raise ValueError(
+  #         'Dimension 1 of the input should be divisible by 4, but is {} '
+  #         'instead.'.format(input_net.shape[1]))
+  # else:
+  #   raise ValueError('Dimension 1 of the input should be explicitly defined.')
+  #
+  # # Check dimension 1 and dimension 2 are defined and divisible by 4.
+  # if input_net.shape[2]:
+  #   if input_net.shape[2] % 4 != 0:
+  #     raise ValueError(
+  #         'Dimension 2 of the input should be divisible by 4, but is {} '
+  #         'instead.'.format(input_net.shape[2]))
+  # else:
+  #   raise ValueError('Dimension 2 of the input should be explicitly defined.')
+
+  with tf.compat.v1.variable_scope('generator_down_sample'):
+    down_sample = ops.pad(input_net, 3)
+    down_sample = _conv2d(
+        inputs=down_sample,
+        filters=final_num_outputs * 4,
+        kernel_size=7,
+        stride=1,
+        name='conv_0')
+    down_sample = tfgan.features.instance_norm(down_sample)
+    down_sample = tf.nn.relu(down_sample)
+
+    down_sample = ops.pad(down_sample, 2)
+    down_sample = _conv2d(
+        inputs=down_sample,
+        filters=final_num_outputs * 2,
+        kernel_size=5,
+        stride=1,
+        name='conv_1')
+    down_sample = tfgan.features.instance_norm(down_sample)
+    down_sample = tf.nn.relu(down_sample)
+
+    down_sample = ops.pad(down_sample, 2)
+    down_sample = _conv2d(
+        inputs=down_sample,
+        filters=final_num_outputs,
+        kernel_size=5,
+        stride=1,
+        name='conv_2')
+    # down_sample = tfgan.features.instance_norm(down_sample)
+    # down_sample = tf.nn.relu(down_sample)
+
+  return down_sample
+
+
 def _residual_block(input_net,
                     num_outputs,
                     kernel_size,
@@ -255,6 +318,10 @@ def generator_bottleneck(input_net, residual_block_num=6, num_outputs=256):
   return bottleneck
 
 
+def generator_bottleneck_hack(input_net, residual_block_num=6, num_outputs=16):
+    return generator_bottleneck(input_net, residual_block_num=residual_block_num, num_outputs=num_outputs)
+
+
 def generator_up_sample(input_net, num_outputs):
   """Up-sampling module in Generator.
 
@@ -297,6 +364,98 @@ def generator_up_sample(input_net, num_outputs):
   return output_net
 
 
+def generator_up_sample_smooth(input_net, num_outputs, conv_kernal_size=5, resize_method=tf.image.ResizeMethod.NEAREST_NEIGHBOR):
+  """Up-sampling module in Generator.
+
+  Up sampling path for image generation in the Generator.
+
+  PyTorch Version:
+  https://github.com/yunjey/StarGAN/blob/fbdb6a6ce2a4a92e1dc034faec765e0dbe4b8164/model.py#L44
+
+  Args:
+    input_net: Tensor of shape (batch_size, h / 4, w / 4, 256).
+    num_outputs: (int) Number of channel for the output tensor.
+    conv_kernal_size: must be an odd number
+    resize_method: one of the following
+        AREA = 'area'
+        BICUBIC = 'bicubic'
+        BILINEAR = 'bilinear'
+        GAUSSIAN = 'gaussian'
+        LANCZOS3 = 'lanczos3'
+        LANCZOS5 = 'lanczos5'
+        MITCHELLCUBIC = 'mitchellcubic'
+        NEAREST_NEIGHBOR = 'nearest'
+
+  Returns:
+    Tensor of shape (batch_size, h, w, num_outputs).
+  """
+
+  with tf.compat.v1.variable_scope('generator_up_sample'):
+    in_shape = input_net.get_shape().as_list()
+
+    up_sample = tf.image.resize(input_net, [in_shape[1] * 2, in_shape[2] * 2], method=resize_method)
+    up_sample = ops.pad(up_sample, (conv_kernal_size - 1) // 2)
+    up_sample = _conv2d(up_sample, filters=128, kernel_size=conv_kernal_size, stride=1, name='upsize_conv_0')
+    # up_sample = _conv2d_transpose(
+    #     input_net, filters=128, kernel_size=4, stride=2, name='deconv_0')
+    up_sample = tfgan.features.instance_norm(up_sample)
+    up_sample = tf.nn.relu(up_sample)
+    # up_sample = up_sample[:, 1:-1, 1:-1, :]
+
+    up_sample = tf.image.resize(up_sample, [in_shape[1] * 4, in_shape[2] * 4], method=resize_method)
+    up_sample = ops.pad(up_sample, (conv_kernal_size - 1) // 2)
+    up_sample = _conv2d(up_sample, filters=64, kernel_size=conv_kernal_size, stride=1, name='upsize_conv_1')
+    # up_sample = _conv2d_transpose(
+    #     up_sample, filters=64, kernel_size=4, stride=2, name='deconv_1')
+    up_sample = tfgan.features.instance_norm(up_sample)
+    up_sample = tf.nn.relu(up_sample)
+    # up_sample = up_sample[:, 1:-1, 1:-1, :]
+
+    output_net = ops.pad(up_sample, 3)
+    output_net = _conv2d(
+        inputs=output_net,
+        filters=num_outputs,
+        kernel_size=7,
+        stride=1,
+        name='conv_0')
+    output_net = tf.nn.tanh(output_net)
+
+  # tf.image.resize
+
+  return output_net
+
+
+def generator_up_sample_hack(input_net, num_outputs):
+  """
+  Same as generator_up_sample() but doesn't do the up-sampling
+  """
+
+  with tf.compat.v1.variable_scope('generator_up_sample'):
+
+    up_sample = _conv2d_transpose(
+        input_net, filters=128, kernel_size=4, stride=1, name='deconv_0')
+    up_sample = tfgan.features.instance_norm(up_sample)
+    up_sample = tf.nn.relu(up_sample)
+    up_sample = up_sample[:, 1:-1, 1:-1, :]
+
+    up_sample = _conv2d_transpose(
+        up_sample, filters=64, kernel_size=4, stride=1, name='deconv_1')
+    up_sample = tfgan.features.instance_norm(up_sample)
+    up_sample = tf.nn.relu(up_sample)
+    up_sample = up_sample[:, 1:-1, 1:-1, :]
+
+    output_net = ops.pad(up_sample, 2)
+    output_net = _conv2d(
+        inputs=output_net,
+        filters=num_outputs,
+        kernel_size=7,
+        stride=1,
+        name='conv_0')
+    output_net = tf.nn.tanh(output_net)
+
+  return output_net
+
+
 def discriminator_input_hidden(input_net, hidden_layer=6, init_num_outputs=64,
                                scope='discriminator_input_hidden', trainable=True):
   """Input Layer + Hidden Layer in the Discriminator.
@@ -325,6 +484,9 @@ def discriminator_input_hidden(input_net, hidden_layer=6, init_num_outputs=64,
     hidden = input_net
 
     for i in range(hidden_layer):
+
+      if hidden.get_shape()[1] < 3 or hidden.get_shape()[2] < 3:
+          break
 
       hidden = ops.pad(hidden, 1)
       hidden = _conv2d(

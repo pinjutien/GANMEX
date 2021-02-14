@@ -67,6 +67,70 @@ def generator(inputs, targets):
   return up_sample
 
 
+def generator_smooth(inputs, targets):
+  """Generator module.
+
+  Piece everything together for the Generator.
+
+  PyTorch Version:
+  https://github.com/yunjey/StarGAN/blob/fbdb6a6ce2a4a92e1dc034faec765e0dbe4b8164/model.py#L22
+
+  Args:
+    inputs: Tensor of shape (batch_size, h, w, c) representing the
+      images/information that we want to transform.
+    targets: Tensor of shape (batch_size, num_domains) representing the target
+      domain the generator should transform the image/information to.
+
+  Returns:
+    Tensor of shape (batch_size, h, w, c) as the inputs.
+  """
+
+  with tf.compat.v1.variable_scope('generator'):
+
+    input_with_condition = ops.condition_input_with_pixel_padding(
+        inputs, targets)
+
+    down_sample = layers.generator_down_sample(input_with_condition)
+
+    bottleneck = layers.generator_bottleneck(down_sample)
+
+    up_sample = layers.generator_up_sample_smooth(bottleneck, inputs.shape[-1])
+
+  return up_sample
+
+
+def generator_hack(inputs, targets):
+  """Generator module.
+
+  Piece everything together for the Generator.
+
+  PyTorch Version:
+  https://github.com/yunjey/StarGAN/blob/fbdb6a6ce2a4a92e1dc034faec765e0dbe4b8164/model.py#L22
+
+  Args:
+    inputs: Tensor of shape (batch_size, h, w, c) representing the
+      images/information that we want to transform.
+    targets: Tensor of shape (batch_size, num_domains) representing the target
+      domain the generator should transform the image/information to.
+
+  Returns:
+    Tensor of shape (batch_size, h, w, c) as the inputs.
+  """
+
+  with tf.compat.v1.variable_scope('generator'):
+
+    input_with_condition = ops.condition_input_with_pixel_padding(
+        inputs, targets)
+
+    down_sample = layers.generator_down_sample_hack(input_with_condition)
+
+    bottleneck = layers.generator_bottleneck_hack(down_sample)
+
+    up_sample = layers.generator_up_sample_hack(bottleneck, inputs.shape[-1])
+
+  return up_sample
+
+
 def discriminator(input_net, class_num):
   """Discriminator Module.
 
@@ -95,6 +159,7 @@ def discriminator(input_net, class_num):
     hidden = layers.discriminator_input_hidden(input_net)
 
     output_src = layers.discriminator_output_source(hidden)
+    # output_src = tf.nn.dropout(output_src, rate=0.5)
     output_src = tf.compat.v1.layers.flatten(output_src)
     output_src = tf.reduce_mean(input_tensor=output_src, axis=1)
 
