@@ -1,5 +1,5 @@
 # GANMEX
- A novel approach applying Generative Adversarial Networks (GAN) by incorporating theto-be-explained classifier as part of the adversarial networks. It is One-vs-One attributions. This repository is based on TensorFlow-GAN (TF-GAN). Users can provide their own classifier as a discriminator of GAN. With customized classifier, GANMEX generate GAN-based images served as a baseline image in attribution methods, [DeepExplain](https://github.com/marcoancona/DeepExplain). The core GAN model is `starGAN`. It can transform one image belonging to one class to the other class.
+ A novel approach applying Generative Adversarial Networks (GAN) by incorporating the to-be-explained classifier as part of the adversarial networks. It is One-vs-One attributions. This repository is based on TensorFlow-GAN (TF-GAN). Users can provide their own classifier as a discriminator of GAN. With customized classifier, GANMEX generate GAN-based images served as a baseline image in attribution methods, [DeepExplain](https://github.com/marcoancona/DeepExplain). The core GAN model is `starGAN`. It can transform one image belonging to one class to the other class. Thus, it can be utilized to one-vs-one explanation.
  
  ## How to run GANMEX
  * arguments: input/output
