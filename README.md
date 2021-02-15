@@ -1,15 +1,33 @@
-# GANMEX
- A novel approach applying Generative Adversarial Networks (GAN) by incorporating the to-be-explained classifier as part of the adversarial networks. It is One-vs-One attributions. This repository is based on TensorFlow-GAN (TF-GAN). Users can provide their own classifier as a discriminator of GAN. With customized classifier, GANMEX generate GAN-based images served as a baseline image in attribution methods, [DeepExplain](https://github.com/marcoancona/DeepExplain). The core GAN model is `starGAN`. It can transform one image belonging to one class to the other class. Thus, it can be utilized to one-vs-one explanation.
- 
- ## How to run GANMEX
- * python version: python 3.6
- * arguments: input/output
- 
- ## Reference
- * public paper link?
+# GANMEX: One-vs-One Attributions Guided by GAN-generated Counterfactual Explanation Baselines
+
+GANMEX is designed for 1) generating counterfactual explanations using Generative Adversarial Networks (GAN) and 2) producing class-targeted baselines for attribution methods such as integraded gradient (IG), DeepLIF, and DeepSHAP. GANMEX was built upon on the [TF-GAN](https://github.com/tensorflow/gan) implementation of [StarGAN](https://arxiv.org/abs/1711.09020) with the to-be-explained classifier incorporated as part of the adversarial networks. Such design allows the counterfactuals to be generated with respect to the trained classifier's perspective and therefore provide reliable explanations to the trained model.
+
+![alt text](https://github.com/pinjutien/GANMEX/blob/master/figures/result1.jpg?raw=true)
+
+
+## Requirements
+
+Requires python 3.6 and tensorflow 1. Additional packages can be installed by the following:
+
+```pip install -r requirements.txt```
+
+## Classifier Training
+
+Run `examples/classification/train_tfds.py`. The training script will produce a keras model `model_keras.h5` as well as a model file converted into tensorflow estimator for GAN training.
+
+## GANMEX Training
+
+Run `examples/stargan_estimator/train.py`. Indicate the path to the classifier files (including the converted estimator file) in the `cls_model` arguement. If `cls_model` is set to `None`, then a new class discriminator will be trained from scratch.
+
+
+
+## Reference
+Please refer to our paper for more detailed explanations of the methodologies:
+
+Sheng-Min Shih, Pin-Ju Tien, Zohar Karnin. [GANMEX: One-vs-One Attributions using GAN-based Model Explainability](https://arxiv.org/abs/2011.06015)
  
 ----------------------------------
-# TensorFlow-GAN (TF-GAN)
+## TensorFlow-GAN (TF-GAN) original README.md
 
 TF-GAN is a lightweight library for training and evaluating [Generative
 Adversarial Networks (GANs)](https://arxiv.org/abs/1406.2661).
