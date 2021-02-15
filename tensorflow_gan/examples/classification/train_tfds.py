@@ -272,8 +272,6 @@ if __name__ == '__main__':
                         help="Additional convoluational layers on top of the pre-trained model")
     parser.add_argument("--global_average_pooling", action='store_true',
                         help="Use a global average pooling layer")
-    parser.add_argument("--global_max_pooling", action='store_true',
-                        help="Use a global average max layer")
     parser.add_argument("--conv_batch_normalization", action='store_true',
                         help="Add a batch normalization layer for each convoluational layer")
     parser.add_argument("--conv_dropout", action='store_true',
@@ -292,7 +290,6 @@ if __name__ == '__main__':
             "--base_learning_rate", "1.0",  # Adadelta should use a learning rate of 1.0
             "--output_folder", "testtest",
             "--training_epochs", "1",
-            "--global_max_pooling",
             "--additional_conv_layers", "2",
             "--dense_sizes", "8096,1024",
             "--dense_dropout",
