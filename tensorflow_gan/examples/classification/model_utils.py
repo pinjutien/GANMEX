@@ -4,9 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.applications import VGG16, MobileNet
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import (Conv2D, BatchNormalization, Dropout, Flatten,
-                                     GlobalAveragePooling2D, GlobalMaxPool2D,
-                                     AveragePooling2D, MaxPooling2D,
-                                     Dense, Activation)
+                                     GlobalAveragePooling2D, AveragePooling2D, Dense, Activation)
 
 
 def get_optimizer(args):
@@ -41,7 +39,6 @@ def get_model(input_shape,
               base_model_name='vgg16',
               additional_conv_layers=0,
               global_average_pooling=False,
-              global_max_pooling=False,
               conv_batch_normalization=True,
               conv_dropout=True,
               dense_batch_normalization=True,
@@ -49,9 +46,6 @@ def get_model(input_shape,
               dense_sizes=[1024],
               num_classes=2
               ):
-
-    if global_average_pooling and global_max_pooling:
-        raise Exception('Can only choose one between global_average_pooling and global_max_pooling')
 
     # load model without classifier layers
     base_model = get_base_model(base_model_name, input_shape)
@@ -75,8 +69,6 @@ def get_model(input_shape,
     # add a global pooling layer
     if global_average_pooling:
         output = GlobalAveragePooling2D()(output)
-    elif global_max_pooling:
-        output = GlobalMaxPool2D()(output)
 
     output = Flatten()(output)
 
